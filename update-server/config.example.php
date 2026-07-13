@@ -7,14 +7,14 @@
 
 return array(
 	'plugin_slug'      => 'cadv-woo-functionalities',
-	'version'          => '1.1.15',
-	'package_file'     => __DIR__ . '/packages/cadv-woo-functionalities-1.1.15.zip',
+	'version'          => '1.1.16',
+	'package_file'     => __DIR__ . '/packages/cadv-woo-functionalities-1.1.16.zip',
 	'homepage'         => 'https://cesarandev.com/',
 	'requires'         => '6.0',
 	'tested'           => '6.6',
 	'requires_php'     => '7.4',
 	'description'      => 'Actualizacion privada de CADV Woo Functionalities.',
-	'changelog'        => '<ul><li>Tipografia Exo aplicada al tag de linea en tarjetas.</li></ul>',
+	'changelog'        => '<ul><li>Nuevo diseno del modal de ficha tecnica.</li><li>Checkbox de privacidad obligatorio en solicitudes de ficha.</li></ul>',
 	'download_token'   => 'change-this-token',
 	'force_https_urls' => true,
 );

@@ -94,6 +94,10 @@
 				return getMessage('email', 'Ingresa un correo electronico valido.');
 			}
 
+			if (!formData.get('privacy_acceptance')) {
+				return getMessage('privacy', 'Debes aceptar la politica de privacidad.');
+			}
+
 			return '';
 		}
 

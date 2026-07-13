@@ -845,9 +845,16 @@ final class CADV_Woo_Functionalities {
 	 */
 	private function enqueue_frontend_assets() {
 		wp_enqueue_style(
+			'cadv-woo-functionalities-font',
+			'https://fonts.googleapis.com/css2?family=Exo:wght@600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap',
+			array(),
+			null
+		);
+
+		wp_enqueue_style(
 			'cadv-woo-functionalities',
 			CADV_WOO_FUNCTIONALITIES_URL . 'assets/css/cadv-woo-functionalities.css',
-			array(),
+			array( 'cadv-woo-functionalities-font' ),
 			CADV_WOO_FUNCTIONALITIES_VERSION
 		);
 
@@ -1259,13 +1266,18 @@ final class CADV_Woo_Functionalities {
 		$product_id   = $product->get_id();
 		$product_name = $product->get_name();
 		$defaults     = $this->get_current_user_form_defaults();
+		$privacy_url  = get_privacy_policy_url();
+		$whatsapp_url = $this->get_whatsapp_url( $product );
 		?>
 		<div class="cesarandev-wf-modal" data-cesarandev-wf-modal hidden>
 			<div class="cesarandev-wf-modal__overlay" data-cesarandev-wf-close-modal></div>
 			<div class="cesarandev-wf-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="cesarandev-wf-modal-title">
 				<button type="button" class="cesarandev-wf-modal__close" data-cesarandev-wf-close-modal aria-label="<?php esc_attr_e( 'Cerrar', 'cadv-woo-functionalities' ); ?>">&times;</button>
-				<h2 id="cesarandev-wf-modal-title"><?php esc_html_e( 'Solicitar ficha tecnica', 'cadv-woo-functionalities' ); ?></h2>
-				<p><?php echo esc_html( sprintf( __( 'Completa tus datos para acceder a la ficha tecnica de %s.', 'cadv-woo-functionalities' ), $product_name ) ); ?></p>
+				<div class="cesarandev-wf-modal__header">
+					<p class="cesarandev-wf-modal__eyebrow"><?php esc_html_e( 'Descargue la ficha tecnica de:', 'cadv-woo-functionalities' ); ?></p>
+					<h2 id="cesarandev-wf-modal-title"><?php echo esc_html( $product_name ); ?></h2>
+					<p><?php esc_html_e( 'Para enviarle el documento necesitamos sus datos de contacto.', 'cadv-woo-functionalities' ); ?></p>
+				</div>
 				<form class="cesarandev-wf-form" data-cesarandev-wf-form novalidate>
 					<input type="hidden" name="product_id" value="<?php echo esc_attr( $product_id ); ?>" />
 
@@ -1294,8 +1306,28 @@ final class CADV_Woo_Functionalities {
 						<input type="tel" name="phone" autocomplete="tel" value="<?php echo esc_attr( $defaults['phone'] ); ?>" required />
 					</label>
 
+					<label class="cesarandev-wf-form__privacy">
+						<input type="checkbox" name="privacy_acceptance" value="1" required />
+						<span>
+							<?php esc_html_e( 'Acepto la', 'cadv-woo-functionalities' ); ?>
+							<?php if ( $privacy_url ) : ?>
+								<a href="<?php echo esc_url( $privacy_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Politica de Privacidad', 'cadv-woo-functionalities' ); ?></a>
+							<?php else : ?>
+								<?php esc_html_e( 'Politica de Privacidad', 'cadv-woo-functionalities' ); ?>
+							<?php endif; ?>
+							<?php esc_html_e( 'y el tratamiento de mis datos conforme a la Ley 1581 de 2012. *', 'cadv-woo-functionalities' ); ?>
+						</span>
+					</label>
+
 					<div class="cesarandev-wf-form__message" data-cesarandev-wf-message role="status" aria-live="polite"></div>
-					<button type="submit" class="cesarandev-wf-form__submit"><?php esc_html_e( 'Solicitar ficha tecnica', 'cadv-woo-functionalities' ); ?></button>
+					<button type="submit" class="cesarandev-wf-form__submit"><?php esc_html_e( 'Enviar y descargar ficha', 'cadv-woo-functionalities' ); ?><span aria-hidden="true">-&gt;</span></button>
+					<?php if ( $whatsapp_url ) : ?>
+						<div class="cesarandev-wf-modal__divider"><span><?php esc_html_e( 'Prefiere hablar directamente?', 'cadv-woo-functionalities' ); ?></span></div>
+						<a class="cesarandev-wf-modal__whatsapp" href="<?php echo esc_url( $whatsapp_url ); ?>" target="_blank" rel="noopener noreferrer">
+							<?php echo $this->get_whatsapp_icon_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							<span><?php esc_html_e( 'Escribir por WhatsApp', 'cadv-woo-functionalities' ); ?></span>
+						</a>
+					<?php endif; ?>
 				</form>
 			</div>
 		</div>
@@ -1657,6 +1689,7 @@ final class CADV_Woo_Functionalities {
 			'position'   => isset( $_POST['position'] ) ? sanitize_text_field( wp_unslash( $_POST['position'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'email'      => isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'phone'      => isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'privacy_acceptance' => ! empty( $_POST['privacy_acceptance'] ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		);
 	}
 
@@ -1699,6 +1732,10 @@ final class CADV_Woo_Functionalities {
 
 		if ( ! is_email( $data['email'] ) ) {
 			return new WP_Error( 'cesarandev_wf_invalid_email', __( 'Ingresa un correo electronico valido.', 'cadv-woo-functionalities' ) );
+		}
+
+		if ( empty( $data['privacy_acceptance'] ) ) {
+			return new WP_Error( 'cesarandev_wf_privacy_required', __( 'Debes aceptar la politica de privacidad.', 'cadv-woo-functionalities' ) );
 		}
 
 		return true;

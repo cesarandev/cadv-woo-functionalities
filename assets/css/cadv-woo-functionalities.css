@@ -108,85 +108,143 @@
 
 .cesarandev-wf-modal__dialog {
 	background: #ffffff;
-	border-radius: 8px;
-	box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+	border-radius: 4px;
+	box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+	color: #111827;
+	font-family: "Poppins", Arial, sans-serif;
 	max-height: calc(100vh - 36px);
-	max-width: 520px;
+	max-width: 430px;
 	overflow: auto;
-	padding: 26px;
+	padding: 0;
 	position: relative;
-	width: min(100%, 520px);
+	width: min(100%, 430px);
 	z-index: 1;
 }
 
+.cesarandev-wf-modal__header {
+	padding: 22px 15px 16px;
+}
+
+.cesarandev-wf-modal__eyebrow {
+	color: #667085;
+	font-family: "Poppins", Arial, sans-serif;
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 1.45;
+	margin: 0 42px 8px 0;
+}
+
 .cesarandev-wf-modal__dialog h2 {
-	font-size: 24px;
+	color: #1f2937;
+	font-family: "Exo", Arial, sans-serif;
+	font-size: 18px;
+	font-weight: 800;
 	line-height: 1.25;
-	margin: 0 36px 8px 0;
+	margin: 0 42px 6px 0;
 }
 
 .cesarandev-wf-modal__dialog p {
-	color: #4f5b57;
-	font-size: 15px;
-	line-height: 1.5;
-	margin: 0 0 18px;
+	color: #667085;
+	font-family: "Poppins", Arial, sans-serif;
+	font-size: 12px;
+	line-height: 1.45;
+	margin: 0;
 }
 
 .cesarandev-wf-modal__close {
 	align-items: center;
 	background: transparent;
-	border: 0;
-	border-radius: 6px;
-	color: #2a312f;
+	border: 1px solid #ff2d73;
+	border-radius: 2px;
+	color: #ff2d73;
 	cursor: pointer;
 	display: inline-flex;
-	font-size: 28px;
-	height: 36px;
+	font-family: "Poppins", Arial, sans-serif;
+	font-size: 18px;
+	height: 35px;
 	justify-content: center;
 	line-height: 1;
 	padding: 0;
 	position: absolute;
-	right: 14px;
-	top: 14px;
-	width: 36px;
+	right: 15px;
+	top: 19px;
+	width: 35px;
 }
 
 .cesarandev-wf-modal__close:hover {
-	background: #eef2f1;
+	background: #fff3f7;
 }
 
 .cesarandev-wf-form {
 	display: grid;
-	gap: 13px;
+	gap: 14px;
+	padding: 18px 15px 22px;
+	border-top: 1px solid #e5e7eb;
 }
 
 .cesarandev-wf-form label {
 	display: grid;
-	gap: 6px;
+	gap: 7px;
 	margin: 0;
 }
 
 .cesarandev-wf-form label span {
-	color: #25302d;
-	font-size: 14px;
-	font-weight: 700;
+	color: #374151;
+	font-family: "Poppins", Arial, sans-serif;
+	font-size: 12px;
+	font-weight: 800;
+	line-height: 1.2;
 }
 
 .cesarandev-wf-form input {
 	background: #ffffff;
-	border: 1px solid #cbd5d1;
-	border-radius: 6px;
-	color: #1f2926;
-	font-size: 15px;
-	min-height: 42px;
-	padding: 10px 12px;
+	border: 1px solid #cfd7e3;
+	border-radius: 2px;
+	color: #1f2937;
+	font-family: "Poppins", Arial, sans-serif;
+	font-size: 13px;
+	min-height: 36px;
+	padding: 9px 11px;
 	width: 100%;
 }
 
 .cesarandev-wf-form input:focus {
-	border-color: #1f4f46;
-	box-shadow: 0 0 0 1px #1f4f46;
+	border-color: #2e7d32;
+	box-shadow: 0 0 0 1px #2e7d32;
 	outline: 0;
+}
+
+.cesarandev-wf-form__privacy {
+	align-items: flex-start;
+	color: #667085;
+	display: flex !important;
+	font-family: "Poppins", Arial, sans-serif;
+	font-size: 11px;
+	gap: 8px !important;
+	line-height: 1.45;
+	margin: 0;
+}
+
+.cesarandev-wf-form__privacy input {
+	flex: 0 0 auto;
+	height: 13px;
+	margin: 2px 0 0;
+	min-height: 13px;
+	padding: 0;
+	width: 13px;
+}
+
+.cesarandev-wf-form__privacy span {
+	color: #667085 !important;
+	font-size: 11px !important;
+	font-weight: 500 !important;
+	line-height: 1.45 !important;
+}
+
+.cesarandev-wf-form__privacy a {
+	color: #2e7d32;
+	font-weight: 700;
+	text-decoration: underline;
 }
 
 .cesarandev-wf-form__message {
@@ -217,20 +275,26 @@
 }
 
 .cesarandev-wf-form__submit {
-	background: #1f4f46;
+	align-items: center;
+	background: #93b695;
 	border: 0;
-	border-radius: 6px;
+	border-radius: 3px;
 	color: #ffffff;
 	cursor: pointer;
-	font-size: 15px;
-	font-weight: 700;
-	min-height: 44px;
-	padding: 12px 16px;
+	display: inline-flex;
+	font-family: "Exo", Arial, sans-serif;
+	font-size: 13px;
+	font-weight: 800;
+	gap: 8px;
+	justify-content: center;
+	min-height: 36px;
+	padding: 10px 16px;
+	width: 100%;
 }
 
 .cesarandev-wf-form__submit:hover,
 .cesarandev-wf-form__submit:focus {
-	background: #143a32;
+	background: #2e7d32;
 	color: #ffffff;
 }
 
@@ -241,6 +305,61 @@
 
 body.cesarandev-wf-modal-open {
 	overflow: hidden;
+}
+
+.cesarandev-wf-modal__divider {
+	align-items: center;
+	color: #7a8494;
+	display: flex;
+	font-family: "Poppins", Arial, sans-serif;
+	font-size: 11px;
+	gap: 10px;
+	justify-content: center;
+	line-height: 1.2;
+	margin: 9px 0 6px;
+	text-align: center;
+}
+
+.cesarandev-wf-modal__divider::before,
+.cesarandev-wf-modal__divider::after {
+	background: #e5e7eb;
+	content: "";
+	display: block;
+	flex: 1 1 auto;
+	height: 1px;
+}
+
+.cesarandev-wf-modal__whatsapp {
+	align-items: center;
+	background: #25d366;
+	border: 1px solid #25d366;
+	border-radius: 3px;
+	color: #ffffff;
+	display: inline-flex;
+	font-family: "Exo", Arial, sans-serif;
+	font-size: 13px;
+	font-weight: 800;
+	gap: 8px;
+	justify-content: center;
+	min-height: 36px;
+	padding: 10px 16px;
+	text-decoration: none;
+	width: 100%;
+}
+
+.cesarandev-wf-modal__whatsapp:hover,
+.cesarandev-wf-modal__whatsapp:focus {
+	background: #1ebe5d;
+	border-color: #1ebe5d;
+	color: #ffffff;
+	text-decoration: none;
+}
+
+.cesarandev-wf-modal__whatsapp .cesarandev-wf-button__icon {
+	height: 16px;
+	max-height: 16px;
+	max-width: 16px;
+	width: 16px;
 }
 
 .cesarandev-wf-cta {
