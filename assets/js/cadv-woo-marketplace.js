@@ -47,6 +47,7 @@
 		var search = root.querySelector('[data-cadv-marketplace-search]');
 		var ica = root.querySelector('[data-cadv-marketplace-ica]');
 		var clear = root.querySelector('[data-cadv-marketplace-clear]');
+		var filterToggle = root.querySelector('[data-cadv-marketplace-filter-toggle]');
 		var loadMore = root.querySelector('[data-cadv-marketplace-load-more]');
 		var lineButtons = root.querySelectorAll('[data-cadv-marketplace-line]');
 		var debounceTimer = null;
@@ -61,6 +62,18 @@
 
 		if (!grid || !summary) {
 			return;
+		}
+
+		function isCompactLayout() {
+			return window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+		}
+
+		function setFilterOpen(isOpen) {
+			root.classList.toggle('is-filter-open', Boolean(isOpen));
+
+			if (filterToggle) {
+				filterToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+			}
 		}
 
 		function setLoading(isLoading) {
@@ -137,6 +150,10 @@
 				state.category = state.category === categoryId ? '' : categoryId;
 				setActiveLine(root, state.category);
 				reloadFromFirstPage();
+
+				if (isCompactLayout()) {
+					setFilterOpen(false);
+				}
 			});
 		});
 
@@ -174,6 +191,18 @@
 
 				setActiveLine(root, '');
 				loadProducts(false);
+			});
+		}
+
+		if (filterToggle) {
+			filterToggle.addEventListener('click', function () {
+				setFilterOpen(!root.classList.contains('is-filter-open'));
+			});
+
+			root.addEventListener('keydown', function (event) {
+				if (event.key === 'Escape') {
+					setFilterOpen(false);
+				}
 			});
 		}
 

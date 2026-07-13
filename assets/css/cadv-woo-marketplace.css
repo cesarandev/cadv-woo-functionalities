@@ -22,6 +22,36 @@
 	letter-spacing: 0;
 }
 
+.cadv-marketplace__mobile-bar {
+	display: none;
+}
+
+.cadv-marketplace__filter-toggle {
+	align-items: center;
+	background: #286b2d;
+	border: 1px solid #286b2d;
+	border-radius: 5px;
+	color: #ffffff;
+	cursor: pointer;
+	display: inline-flex;
+	font-family: "Exo", Arial, sans-serif;
+	font-size: 14px;
+	font-weight: 700;
+	justify-content: center;
+	line-height: 1.2;
+	min-height: 42px;
+	padding: 10px 16px;
+	width: 100%;
+}
+
+.cadv-marketplace__filter-toggle:hover,
+.cadv-marketplace__filter-toggle:focus {
+	background: #1f5624;
+	border-color: #1f5624;
+	color: #ffffff;
+	outline: 0;
+}
+
 .cadv-marketplace__filters {
 	background: #f4efe6;
 	border: 1px solid #ded6c9;
@@ -485,8 +515,27 @@
 		grid-template-columns: 1fr;
 	}
 
+	.cadv-marketplace__mobile-bar {
+		display: block;
+	}
+
 	.cadv-marketplace__filters {
-		display: none;
+		border-width: 0;
+		display: block;
+		max-height: 0;
+		opacity: 0;
+		overflow: hidden;
+		pointer-events: none;
+		position: static;
+		width: 100%;
+	}
+
+	.cadv-marketplace.is-filter-open .cadv-marketplace__filters {
+		border-width: 1px;
+		max-height: 72vh;
+		opacity: 1;
+		overflow: auto;
+		pointer-events: auto;
 	}
 
 	.cadv-marketplace__line-list {
@@ -509,10 +558,6 @@
 	.cadv-marketplace {
 		gap: 22px;
 		grid-template-columns: 1fr;
-	}
-
-	.cadv-marketplace__filters {
-		display: none;
 	}
 
 	.cadv-marketplace__grid {

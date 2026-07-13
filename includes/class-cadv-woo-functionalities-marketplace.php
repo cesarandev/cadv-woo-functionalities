@@ -100,6 +100,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 		$show_ica_filter = $this->is_truthy( $atts['show_ica_filter'] );
 		$categories      = $this->get_line_categories();
 		$search_id       = wp_unique_id( 'cadv-marketplace-search-' );
+		$filters_id      = wp_unique_id( 'cadv-marketplace-filters-' );
 		$response        = $this->get_products_response(
 			array(
 				'category' => 0,
@@ -117,7 +118,13 @@ final class CADV_Woo_Functionalities_Marketplace {
 		$this->print_late_styles();
 		?>
 		<div class="cadv-marketplace" data-cadv-marketplace data-per-page="<?php echo esc_attr( $per_page ); ?>" data-columns="<?php echo esc_attr( $columns ); ?>" data-show-ica="<?php echo $show_ica_filter ? '1' : '0'; ?>" style="--cadv-marketplace-columns: <?php echo esc_attr( $columns ); ?>;">
-			<aside class="cadv-marketplace__filters" aria-label="<?php esc_attr_e( 'Filtros de marketplace', 'cadv-woo-functionalities' ); ?>">
+			<div class="cadv-marketplace__mobile-bar">
+				<button type="button" class="cadv-marketplace__filter-toggle" data-cadv-marketplace-filter-toggle aria-controls="<?php echo esc_attr( $filters_id ); ?>" aria-expanded="false">
+					<?php esc_html_e( 'Filtrar productos', 'cadv-woo-functionalities' ); ?>
+				</button>
+			</div>
+
+			<aside id="<?php echo esc_attr( $filters_id ); ?>" class="cadv-marketplace__filters" aria-label="<?php esc_attr_e( 'Filtros de marketplace', 'cadv-woo-functionalities' ); ?>">
 				<div class="cadv-marketplace__filters-header">
 					<h2><?php esc_html_e( 'Filtrar por linea', 'cadv-woo-functionalities' ); ?></h2>
 					<button type="button" class="cadv-marketplace__clear" data-cadv-marketplace-clear><?php esc_html_e( 'Limpiar filtros', 'cadv-woo-functionalities' ); ?></button>
