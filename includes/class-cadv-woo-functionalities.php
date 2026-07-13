@@ -23,6 +23,8 @@ final class CADV_Woo_Functionalities {
 	const DELETE_ACCOUNT_NONCE    = 'cesarandev_wf_request_account_deletion';
 	const ORDER_SOURCE            = 'cesarandev_technical_sheet_request';
 	const LEAD_POST_TYPE          = 'cesarandev_wf_lead';
+	const MARKETPLACE_TERM_COLOR_META = '_cadv_marketplace_color';
+	const DEFAULT_LINE_COLOR      = '#2f7d3a';
 
 	/**
 	 * Singleton instance.
@@ -1268,8 +1270,9 @@ final class CADV_Woo_Functionalities {
 		$defaults     = $this->get_current_user_form_defaults();
 		$privacy_url  = get_privacy_policy_url();
 		$whatsapp_url = $this->get_whatsapp_url( $product );
+		$line_color   = $this->get_product_line_color( $product );
 		?>
-		<div class="cesarandev-wf-modal" data-cesarandev-wf-modal hidden>
+		<div class="cesarandev-wf-modal" data-cesarandev-wf-modal style="--cesarandev-wf-accent: <?php echo esc_attr( $line_color ); ?>;" hidden>
 			<div class="cesarandev-wf-modal__overlay" data-cesarandev-wf-close-modal></div>
 			<div class="cesarandev-wf-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="cesarandev-wf-modal-title">
 				<button type="button" class="cesarandev-wf-modal__close" data-cesarandev-wf-close-modal aria-label="<?php esc_attr_e( 'Cerrar', 'cadv-woo-functionalities' ); ?>">&times;</button>
@@ -3155,6 +3158,60 @@ final class CADV_Woo_Functionalities {
 	 */
 	private function get_default_message_template() {
 		return __( 'Hola, estoy viendo el producto {product_name} en la pagina web y quisiera mas informacion. {product_url}', 'cadv-woo-functionalities' );
+	}
+
+	/**
+	 * Get the configured marketplace line color for a product.
+	 *
+	 * @param WC_Product $product WooCommerce product.
+	 * @return string
+	 */
+	private function get_product_line_color( WC_Product $product ) {
+		$terms = get_the_terms( $product->get_id(), 'product_cat' );
+
+		if ( is_wp_error( $terms ) || empty( $terms ) ) {
+			return self::DEFAULT_LINE_COLOR;
+		}
+
+		foreach ( $terms as $term ) {
+			$line = $this->normalize_product_line_term( $term );
+
+			if ( $line instanceof WP_Term ) {
+				$color = sanitize_hex_color( get_term_meta( $line->term_id, self::MARKETPLACE_TERM_COLOR_META, true ) );
+
+				if ( $color ) {
+					return $color;
+				}
+			}
+		}
+
+		return self::DEFAULT_LINE_COLOR;
+	}
+
+	/**
+	 * Convert a product category to its top-level marketplace line.
+	 *
+	 * @param WP_Term $term Product category.
+	 * @return WP_Term|null
+	 */
+	private function normalize_product_line_term( $term ) {
+		if ( ! $term instanceof WP_Term ) {
+			return null;
+		}
+
+		if ( 0 === absint( $term->parent ) ) {
+			return $term;
+		}
+
+		$ancestors = get_ancestors( $term->term_id, 'product_cat', 'taxonomy' );
+
+		if ( empty( $ancestors ) ) {
+			return $term;
+		}
+
+		$parent = get_term( end( $ancestors ), 'product_cat' );
+
+		return $parent instanceof WP_Term ? $parent : $term;
 	}
 
 	/**

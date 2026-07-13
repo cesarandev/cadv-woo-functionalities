@@ -86,6 +86,7 @@
 
 .cesarandev-wf-modal {
 	align-items: center;
+	--cesarandev-wf-accent: #2f7d3a;
 	bottom: 0;
 	display: flex;
 	justify-content: center;
@@ -154,9 +155,9 @@
 .cesarandev-wf-modal__close {
 	align-items: center;
 	background: transparent;
-	border: 1px solid #ff2d73;
+	border: 1px solid var(--cesarandev-wf-accent, #2f7d3a);
 	border-radius: 2px;
-	color: #ff2d73;
+	color: var(--cesarandev-wf-accent, #2f7d3a);
 	cursor: pointer;
 	display: inline-flex;
 	font-family: "Poppins", Arial, sans-serif;
@@ -172,7 +173,7 @@
 }
 
 .cesarandev-wf-modal__close:hover {
-	background: #fff3f7;
+	background: #f6fbf7;
 }
 
 .cesarandev-wf-form {
@@ -209,8 +210,8 @@
 }
 
 .cesarandev-wf-form input:focus {
-	border-color: #2e7d32;
-	box-shadow: 0 0 0 1px #2e7d32;
+	border-color: var(--cesarandev-wf-accent, #2f7d3a);
+	box-shadow: 0 0 0 1px var(--cesarandev-wf-accent, #2f7d3a);
 	outline: 0;
 }
 
@@ -242,7 +243,7 @@
 }
 
 .cesarandev-wf-form__privacy a {
-	color: #2e7d32;
+	color: var(--cesarandev-wf-accent, #2f7d3a);
 	font-weight: 700;
 	text-decoration: underline;
 }
@@ -276,8 +277,8 @@
 
 .cesarandev-wf-form__submit {
 	align-items: center;
-	background: #93b695;
-	border: 0;
+	background: var(--cesarandev-wf-accent, #2f7d3a);
+	border: 1px solid var(--cesarandev-wf-accent, #2f7d3a);
 	border-radius: 3px;
 	color: #ffffff;
 	cursor: pointer;
@@ -294,7 +295,8 @@
 
 .cesarandev-wf-form__submit:hover,
 .cesarandev-wf-form__submit:focus {
-	background: #2e7d32;
+	background: var(--cesarandev-wf-accent, #2f7d3a);
+	border-color: var(--cesarandev-wf-accent, #2f7d3a);
 	color: #ffffff;
 }
 
