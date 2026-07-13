@@ -526,3 +526,151 @@ body.cesarandev-wf-modal-open {
 		grid-column: 1 / -1;
 	}
 }
+
+@media (max-width: 767px) {
+	.cesarandev-wf-product-actions {
+		display: grid;
+		gap: 10px;
+		grid-template-columns: 1fr;
+		margin: 12px 0 18px;
+		width: 100%;
+	}
+
+	.cesarandev-wf-product-actions .cesarandev-wf-button {
+		justify-content: center;
+		min-height: 42px;
+		width: 100% !important;
+	}
+
+	.cesarandev-wf-modal {
+		align-items: flex-start;
+		overflow: auto;
+		padding: 10px;
+	}
+
+	.cesarandev-wf-modal__dialog {
+		margin: 0 auto 10px;
+		max-height: none;
+		max-width: 430px;
+		width: 100%;
+	}
+
+	.cesarandev-wf-modal__header {
+		padding: 20px 15px 15px;
+	}
+
+	.cesarandev-wf-modal__dialog h2 {
+		font-size: 17px;
+	}
+
+	.cesarandev-wf-form {
+		gap: 12px;
+		padding: 16px 15px 20px;
+	}
+
+	.cesarandev-wf-form input {
+		min-height: 40px;
+	}
+
+	.cesarandev-wf-form__submit,
+	.cesarandev-wf-modal__whatsapp {
+		min-height: 40px;
+	}
+
+	.cesarandev-wf-cta {
+		max-width: none;
+		width: 100%;
+	}
+
+	.cesarandev-wf-cta__header {
+		padding: 20px 18px 16px;
+	}
+
+	.cesarandev-wf-cta__form {
+		grid-template-columns: 1fr;
+		padding: 18px;
+	}
+
+	.cesarandev-wf-cta__field--full {
+		grid-column: 1 / -1;
+	}
+
+	.cesarandev-wf-cta__field input,
+	.cesarandev-wf-cta__field select {
+		min-width: 0;
+	}
+}
+
+@media (max-width: 420px) {
+	.cesarandev-wf-modal {
+		padding: 8px;
+	}
+
+	.cesarandev-wf-modal__header {
+		padding: 18px 12px 13px;
+	}
+
+	.cesarandev-wf-modal__eyebrow,
+	.cesarandev-wf-modal__dialog h2 {
+		margin-right: 38px;
+	}
+
+	.cesarandev-wf-modal__dialog p {
+		font-size: 11px;
+	}
+
+	.cesarandev-wf-modal__close {
+		height: 31px;
+		right: 12px;
+		top: 14px;
+		width: 31px;
+	}
+
+	.cesarandev-wf-form {
+		padding: 15px 12px 18px;
+	}
+
+	.cesarandev-wf-form label span,
+	.cesarandev-wf-cta__field span {
+		font-size: 11px;
+	}
+
+	.cesarandev-wf-form input,
+	.cesarandev-wf-cta__field input,
+	.cesarandev-wf-cta__field select {
+		font-size: 13px;
+	}
+
+	.cesarandev-wf-form__privacy,
+	.cesarandev-wf-form__privacy span,
+	.cesarandev-wf-cta__privacy {
+		font-size: 10px !important;
+	}
+
+	.cesarandev-wf-cta__header {
+		padding: 18px 15px 14px;
+	}
+
+	.cesarandev-wf-cta__header h2 {
+		font-size: 20px;
+	}
+
+	.cesarandev-wf-cta__form {
+		padding: 16px 15px 18px;
+	}
+}
+
+@media (max-width: 360px) {
+	.cesarandev-wf-button,
+	.cesarandev-wf-form__submit,
+	.cesarandev-wf-modal__whatsapp,
+	.cesarandev-wf-cta__submit {
+		font-size: 12px;
+		padding-left: 12px;
+		padding-right: 12px;
+	}
+
+	.cesarandev-wf-modal__dialog h2 {
+		font-size: 16px;
+	}
+}

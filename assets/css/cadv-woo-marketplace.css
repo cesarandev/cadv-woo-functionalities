@@ -454,7 +454,47 @@
 
 @media (max-width: 1024px) {
 	.cadv-marketplace {
+		gap: 22px;
 		grid-template-columns: 240px minmax(0, 1fr);
+	}
+
+	.cadv-marketplace__grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.cadv-marketplace-card {
+		min-height: 500px;
+	}
+
+	.cadv-marketplace-card__media {
+		min-height: 210px;
+	}
+
+	.cadv-marketplace-card__image {
+		height: 190px;
+	}
+}
+
+@media (max-width: 900px) {
+	.cadv-marketplace {
+		gap: 20px;
+		grid-template-columns: 1fr;
+	}
+
+	.cadv-marketplace__filters {
+		position: static;
+		width: 100%;
+	}
+
+	.cadv-marketplace__line-list {
+		display: grid;
+		gap: 4px 8px;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		padding: 12px;
+	}
+
+	.cadv-marketplace__line {
+		min-width: 0;
 	}
 
 	.cadv-marketplace__grid {
@@ -478,5 +518,110 @@
 
 	.cadv-marketplace-card {
 		min-height: 0;
+	}
+}
+
+@media (max-width: 640px) {
+	.cadv-marketplace {
+		gap: 16px;
+	}
+
+	.cadv-marketplace__filters-header {
+		padding: 14px 15px;
+	}
+
+	.cadv-marketplace__filters-header h2 {
+		font-size: 15px;
+	}
+
+	.cadv-marketplace__clear {
+		font-size: 12px;
+	}
+
+	.cadv-marketplace__line-list {
+		grid-template-columns: 1fr;
+		max-height: 312px;
+		overflow: auto;
+		padding: 10px 8px;
+	}
+
+	.cadv-marketplace__line {
+		font-size: 14px;
+		min-height: 34px;
+		padding: 8px 10px 8px 8px;
+	}
+
+	.cadv-marketplace__toggle,
+	.cadv-marketplace__search {
+		padding: 13px 15px;
+	}
+
+	.cadv-marketplace__search input {
+		font-size: 13px;
+		height: 38px;
+		min-width: 0;
+	}
+
+	.cadv-marketplace__summary {
+		font-size: 13px;
+		margin-bottom: 14px;
+	}
+
+	.cadv-marketplace__grid {
+		gap: 16px;
+		grid-template-columns: 1fr;
+	}
+
+	.cadv-marketplace-card__media {
+		min-height: 178px;
+		padding: 16px;
+	}
+
+	.cadv-marketplace-card__image {
+		height: 165px;
+	}
+
+	.cadv-marketplace-card__placeholder {
+		height: 58px;
+		width: 58px;
+	}
+
+	.cadv-marketplace-card__placeholder-label {
+		font-size: 12px;
+		max-width: 150px;
+	}
+
+	.cadv-marketplace-card__body {
+		padding: 15px;
+	}
+
+	.cadv-marketplace-card__body h3 {
+		font-size: 15px;
+	}
+
+	.cadv-marketplace-card__description {
+		font-size: 14px;
+		line-height: 1.46;
+	}
+
+	.cadv-marketplace-card__button {
+		font-size: 13px;
+		min-height: 40px;
+	}
+}
+
+@media (max-width: 380px) {
+	.cadv-marketplace__filters-header {
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.cadv-marketplace-card__media {
+		min-height: 160px;
+	}
+
+	.cadv-marketplace-card__image {
+		height: 150px;
 	}
 }
