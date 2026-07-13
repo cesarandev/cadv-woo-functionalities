@@ -393,7 +393,6 @@
 	min-height: 37px;
 	padding: 10px 13px;
 	text-decoration: none;
-	transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 	width: 100%;
 }
 
@@ -403,15 +402,15 @@
 }
 
 .cadv-marketplace-card__button--primary {
-	background: #286b2d;
-	border: 1px solid #286b2d;
+	background: var(--line-color, #286b2d);
+	border: 1px solid var(--line-color, #286b2d);
 	color: #ffffff;
 }
 
 .cadv-marketplace-card__button--primary:hover,
 .cadv-marketplace-card__button--primary:focus {
-	background: #1f5624;
-	border-color: #1f5624;
+	background: var(--line-color, #286b2d);
+	border-color: var(--line-color, #286b2d);
 	color: #ffffff;
 }
 
@@ -451,10 +450,6 @@
 .cadv-marketplace__load-more[disabled] {
 	cursor: wait;
 	opacity: 0.72;
-}
-
-.cadv-marketplace.is-loading .cadv-marketplace__grid {
-	opacity: 0.68;
 }
 
 @media (max-width: 1024px) {
