@@ -528,7 +528,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 	private function enqueue_assets() {
 		wp_enqueue_style(
 			'cadv-woo-marketplace-font',
-			'https://fonts.googleapis.com/css2?family=Exo:wght@400;500;600;700;800&display=swap',
+			'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap',
 			array(),
 			null
 		);
