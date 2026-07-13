@@ -1241,7 +1241,7 @@ final class CADV_Woo_Functionalities {
 		}
 
 		printf(
-			'<a class="cesarandev-wf-button cesarandev-wf-whatsapp-button" style="align-items:center;background:#fff;border:1px solid #25d366;border-radius:4px;box-shadow:none;color:#14c857;display:inline-flex;font-size:18px;font-weight:600;gap:10px;justify-content:center;line-height:1.2;min-height:42px;padding:11px 16px;text-decoration:none;width:100%;" href="%1$s" target="_blank" rel="noopener noreferrer" aria-label="%2$s">%3$s<span>%4$s</span></a>',
+			'<a class="cesarandev-wf-button cesarandev-wf-whatsapp-button" style="align-items:center;background:#fff;border:1px solid #25d366;border-radius:4px;box-shadow:none;color:#14c857;display:inline-flex;font-size:18px;font-weight:600;gap:10px;justify-content:center;line-height:1.2;min-height:42px;padding:11px 16px;text-decoration:none;width:100%%;" href="%1$s" target="_blank" rel="noopener noreferrer" aria-label="%2$s">%3$s<span>%4$s</span></a>',
 			esc_url( $url ),
 			esc_attr__( 'Consultar este producto por WhatsApp', 'cadv-woo-functionalities' ),
 			$this->get_whatsapp_icon_svg(), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -1256,7 +1256,7 @@ final class CADV_Woo_Functionalities {
 	 */
 	private function render_technical_sheet_button( WC_Product $product ) {
 		printf(
-			'<button type="button" class="cesarandev-wf-button cesarandev-wf-sheet-button" style="align-items:center;background:var(--cesarandev-wf-accent,#2f7d3a);border:1px solid var(--cesarandev-wf-accent,#2f7d3a);border-radius:4px;box-shadow:none;color:#fff;cursor:pointer;display:inline-flex;font-size:20px;font-weight:600;gap:12px;justify-content:center;line-height:1.2;min-height:60px;padding:14px 18px;text-decoration:none;width:100%;" data-cesarandev-wf-open-modal data-product-id="%1$d">%2$s<span>%3$s</span></button>',
+			'<button type="button" class="cesarandev-wf-button cesarandev-wf-sheet-button" style="align-items:center;background:var(--cesarandev-wf-accent,#2f7d3a);border:1px solid var(--cesarandev-wf-accent,#2f7d3a);border-radius:4px;box-shadow:none;color:#fff;cursor:pointer;display:inline-flex;font-size:20px;font-weight:600;gap:12px;justify-content:center;line-height:1.2;min-height:60px;padding:14px 18px;text-decoration:none;width:100%%;" data-cesarandev-wf-open-modal data-product-id="%1$d">%2$s<span>%3$s</span></button>',
 			absint( $product->get_id() ),
 			$this->get_document_icon_svg(), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			esc_html__( 'Obtener ficha técnica', 'cadv-woo-functionalities' )
