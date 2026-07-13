@@ -195,7 +195,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 		<form class="cadv-marketplace-search" action="<?php echo esc_url( $target ); ?>" method="get" role="search">
 			<label class="cadv-marketplace__screen-reader-text" for="<?php echo esc_attr( $search_id ); ?>"><?php esc_html_e( 'Buscar productos', 'cadv-woo-functionalities' ); ?></label>
 			<div class="cadv-marketplace-search__control">
-				<span class="cadv-marketplace-search__icon" aria-hidden="true"></span>
+				<span class="cadv-marketplace__search-icon" aria-hidden="true"></span>
 				<input id="<?php echo esc_attr( $search_id ); ?>" name="cadv_search" type="search" value="<?php echo esc_attr( $query_value ); ?>" placeholder="<?php echo esc_attr( $atts['placeholder'] ); ?>" />
 			</div>
 		</form>
@@ -739,7 +739,8 @@ final class CADV_Woo_Functionalities_Marketplace {
 		);
 
 		if ( ! empty( $filters['search'] ) ) {
-			$args['s'] = sanitize_text_field( $filters['search'] );
+			$matching_ids    = $this->get_search_matching_product_ids( $filters['search'] );
+			$args['post__in'] = $matching_ids ? $matching_ids : array( 0 );
 		}
 
 		if ( ! empty( $filters['category'] ) ) {
@@ -764,6 +765,176 @@ final class CADV_Woo_Functionalities_Marketplace {
 		}
 
 		return new WP_Query( $args );
+	}
+
+	/**
+	 * Get products matching a broad marketplace search.
+	 *
+	 * @param string $search Search phrase.
+	 * @return int[]
+	 */
+	private function get_search_matching_product_ids( $search ) {
+		$search = trim( sanitize_text_field( $search ) );
+
+		if ( '' === $search ) {
+			return array();
+		}
+
+		$ids = array_merge(
+			$this->get_core_search_product_ids( $search ),
+			$this->get_meta_search_product_ids( $search ),
+			$this->get_taxonomy_search_product_ids( $search )
+		);
+
+		return array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) );
+	}
+
+	/**
+	 * Search product title, content and excerpt.
+	 *
+	 * @param string $search Search phrase.
+	 * @return int[]
+	 */
+	private function get_core_search_product_ids( $search ) {
+		$query = new WP_Query(
+			array(
+				'post_type'           => 'product',
+				'post_status'         => 'publish',
+				'fields'              => 'ids',
+				'posts_per_page'      => -1,
+				's'                   => $search,
+				'no_found_rows'       => true,
+				'ignore_sticky_posts' => true,
+			)
+		);
+
+		return array_map( 'absint', $query->posts );
+	}
+
+	/**
+	 * Search marketplace product metadata.
+	 *
+	 * @param string $search Search phrase.
+	 * @return int[]
+	 */
+	private function get_meta_search_product_ids( $search ) {
+		$meta_query = array( 'relation' => 'OR' );
+		$meta_keys  = array(
+			self::PRODUCT_SEGMENT_META,
+			self::PRODUCT_TYPE_META,
+			self::PRODUCT_DESC_META,
+			self::PRODUCT_ICA_META,
+			'_sku',
+		);
+
+		foreach ( $this->get_search_keywords( $search ) as $keyword ) {
+			foreach ( $meta_keys as $meta_key ) {
+				$meta_query[] = array(
+					'key'     => $meta_key,
+					'value'   => $keyword,
+					'compare' => 'LIKE',
+				);
+			}
+		}
+
+		$query = new WP_Query(
+			array(
+				'post_type'           => 'product',
+				'post_status'         => 'publish',
+				'fields'              => 'ids',
+				'posts_per_page'      => -1,
+				'meta_query'          => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				'no_found_rows'       => true,
+				'ignore_sticky_posts' => true,
+			)
+		);
+
+		return array_map( 'absint', $query->posts );
+	}
+
+	/**
+	 * Search product categories, lines and tags.
+	 *
+	 * @param string $search Search phrase.
+	 * @return int[]
+	 */
+	private function get_taxonomy_search_product_ids( $search ) {
+		$product_ids = array();
+		$taxonomies  = array( 'product_cat', 'product_tag' );
+
+		foreach ( $taxonomies as $taxonomy ) {
+			if ( ! taxonomy_exists( $taxonomy ) ) {
+				continue;
+			}
+
+			$term_ids = array();
+
+			foreach ( $this->get_search_keywords( $search ) as $keyword ) {
+				$terms = get_terms(
+					array(
+						'taxonomy'   => $taxonomy,
+						'hide_empty' => false,
+						'fields'     => 'ids',
+						'search'     => $keyword,
+					)
+				);
+
+				if ( is_wp_error( $terms ) || empty( $terms ) ) {
+					continue;
+				}
+
+				$term_ids = array_merge( $term_ids, array_map( 'absint', $terms ) );
+			}
+
+			$term_ids = array_values( array_unique( array_filter( $term_ids ) ) );
+
+			if ( 'product_cat' === $taxonomy ) {
+				foreach ( $term_ids as $term_id ) {
+					$children = get_term_children( $term_id, $taxonomy );
+
+					if ( ! is_wp_error( $children ) && $children ) {
+						$term_ids = array_merge( $term_ids, array_map( 'absint', $children ) );
+					}
+				}
+			}
+
+			$term_ids = array_values( array_unique( array_filter( $term_ids ) ) );
+
+			if ( empty( $term_ids ) ) {
+				continue;
+			}
+
+			$objects = get_objects_in_term( $term_ids, $taxonomy );
+
+			if ( ! is_wp_error( $objects ) && $objects ) {
+				$product_ids = array_merge( $product_ids, array_map( 'absint', $objects ) );
+			}
+		}
+
+		return array_values( array_unique( array_filter( $product_ids ) ) );
+	}
+
+	/**
+	 * Split search text into useful keyword candidates.
+	 *
+	 * @param string $search Search phrase.
+	 * @return string[]
+	 */
+	private function get_search_keywords( $search ) {
+		$keywords = array( trim( sanitize_text_field( $search ) ) );
+		$parts    = preg_split( '/\s+/', $search );
+
+		if ( is_array( $parts ) ) {
+			foreach ( $parts as $part ) {
+				$part = trim( sanitize_text_field( $part ) );
+
+				if ( strlen( $part ) >= 3 ) {
+					$keywords[] = $part;
+				}
+			}
+		}
+
+		return array_slice( array_values( array_unique( array_filter( $keywords ) ) ), 0, 8 );
 	}
 
 	/**

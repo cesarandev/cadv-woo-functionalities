@@ -96,6 +96,14 @@ Opciones disponibles:
 [cadv_marketplace per_page="12" columns="3" show_ica_filter="yes"]
 ```
 
+Buscador externo para ubicarlo en otra seccion de Elementor:
+
+```text
+[cadv_marketplace_search target="/marketplace/"]
+```
+
+Este buscador envia a `/marketplace/?cadv_search=...` y el marketplace carga los resultados filtrados. La busqueda revisa nombre, descripcion, categoria/linea, etiquetas, segmento, tipo, Registro ICA y SKU.
+
 El filtro de linea usa las categorias padre de producto WooCommerce. Cada categoria de producto permite configurar un color para el marketplace. Cada producto permite configurar un campo `Registro ICA`, que se muestra en las tarjetas y habilita el filtro de productos con registro.
 
 ## Carga masiva de productos del marketplace
