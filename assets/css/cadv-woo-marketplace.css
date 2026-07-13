@@ -36,6 +36,7 @@
 	background: #286b2d;
 	color: #ffffff;
 	display: flex;
+	font-family: "Exo", Arial, sans-serif;
 	gap: 12px;
 	justify-content: space-between;
 	padding: 16px 18px;
