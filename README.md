@@ -98,6 +98,29 @@ Opciones disponibles:
 
 El filtro de linea usa las categorias padre de producto WooCommerce. Cada categoria de producto permite configurar un color para el marketplace. Cada producto permite configurar un campo `Registro ICA`, que se muestra en las tarjetas y habilita el filtro de productos con registro.
 
+## Carga masiva de productos del marketplace
+
+Para importar productos desde el CSV nativo de WooCommerce, puedes usar estas columnas:
+
+```text
+Nombre
+Segmento
+Linea comercial
+Tipo
+Descripcion comercial-tecnica
+Registro ICA
+Categorias
+Imagenes
+```
+
+Equivalencias:
+
+- `Nombre`: producto.
+- `Linea comercial`: crea o asigna una categoria padre de producto, que se usa como linea en el filtro del marketplace.
+- `Descripcion comercial-tecnica`: se guarda como dato del marketplace y tambien se usa como descripcion corta si el producto no trae una.
+- `Segmento`, `Tipo` y `Registro ICA`: se guardan como datos del producto y se exportan nuevamente en CSV.
+- `Categorias`: sigue siendo la columna nativa de WooCommerce para categorias adicionales o subcategorias.
+
 ## Actualizaciones privadas
 
 El plugin incluye un cliente de actualizaciones en `includes/class-cadv-woo-functionalities-updater.php` y un servidor PHP basico en `update-server/`.

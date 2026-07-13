@@ -17,6 +17,9 @@ final class CADV_Woo_Functionalities_Marketplace {
 	const AJAX_ACTION          = 'cadv_marketplace_products';
 	const NONCE_ACTION         = 'cadv_marketplace_products';
 	const TERM_COLOR_META      = '_cadv_marketplace_color';
+	const PRODUCT_SEGMENT_META = '_cadv_marketplace_segment';
+	const PRODUCT_TYPE_META    = '_cadv_marketplace_product_type';
+	const PRODUCT_DESC_META    = '_cadv_marketplace_commercial_technical_description';
 	const PRODUCT_ICA_META     = '_cadv_marketplace_ica_registration';
 	const DEFAULT_LINE_COLOR   = '#2f7d3a';
 	const DEFAULT_PER_PAGE     = 12;
@@ -58,7 +61,17 @@ final class CADV_Woo_Functionalities_Marketplace {
 		add_action( 'edited_product_cat', array( $this, 'save_category_color' ) );
 
 		add_action( 'woocommerce_product_options_general_product_data', array( $this, 'render_product_ica_field' ) );
-		add_action( 'woocommerce_admin_process_product_object', array( $this, 'save_product_ica_field' ) );
+		add_action( 'woocommerce_admin_process_product_object', array( $this, 'save_product_marketplace_fields' ) );
+		add_filter( 'woocommerce_csv_product_import_mapping_options', array( $this, 'add_csv_mapping_options' ) );
+		add_filter( 'woocommerce_csv_product_import_mapping_default_columns', array( $this, 'add_csv_mapping_default_columns' ) );
+		add_filter( 'woocommerce_product_import_pre_insert_product_object', array( $this, 'import_product_marketplace_fields' ), 10, 2 );
+		add_filter( 'woocommerce_product_export_column_names', array( $this, 'add_export_columns' ) );
+		add_filter( 'woocommerce_product_export_product_default_columns', array( $this, 'add_export_columns' ) );
+		add_filter( 'woocommerce_product_export_product_column_cadv_segment', array( $this, 'export_segment_column' ), 10, 2 );
+		add_filter( 'woocommerce_product_export_product_column_cadv_line', array( $this, 'export_line_column' ), 10, 2 );
+		add_filter( 'woocommerce_product_export_product_column_cadv_type', array( $this, 'export_type_column' ), 10, 2 );
+		add_filter( 'woocommerce_product_export_product_column_cadv_commercial_description', array( $this, 'export_commercial_description_column' ), 10, 2 );
+		add_filter( 'woocommerce_product_export_product_column_cadv_ica_registration', array( $this, 'export_ica_column' ), 10, 2 );
 	}
 
 	/**
@@ -230,12 +243,34 @@ final class CADV_Woo_Functionalities_Marketplace {
 	}
 
 	/**
-	 * Render ICA field in product data.
+	 * Render marketplace fields in product data.
 	 */
 	public function render_product_ica_field() {
-		if ( ! function_exists( 'woocommerce_wp_text_input' ) ) {
+		if ( ! function_exists( 'woocommerce_wp_text_input' ) || ! function_exists( 'woocommerce_wp_textarea_input' ) ) {
 			return;
 		}
+
+		echo '<div class="options_group">';
+
+		woocommerce_wp_text_input(
+			array(
+				'id'          => self::PRODUCT_SEGMENT_META,
+				'label'       => __( 'Segmento', 'cadv-woo-functionalities' ),
+				'desc_tip'    => true,
+				'description' => __( 'Segmento comercial usado para ordenar cargas masivas y reportes del marketplace.', 'cadv-woo-functionalities' ),
+				'placeholder' => __( 'Ej. Complejos mezclados', 'cadv-woo-functionalities' ),
+			)
+		);
+
+		woocommerce_wp_text_input(
+			array(
+				'id'          => self::PRODUCT_TYPE_META,
+				'label'       => __( 'Tipo', 'cadv-woo-functionalities' ),
+				'desc_tip'    => true,
+				'description' => __( 'Tipo tecnico o familia descriptiva del producto.', 'cadv-woo-functionalities' ),
+				'placeholder' => __( 'Ej. Complejo NPK', 'cadv-woo-functionalities' ),
+			)
+		);
 
 		woocommerce_wp_text_input(
 			array(
@@ -246,14 +281,26 @@ final class CADV_Woo_Functionalities_Marketplace {
 				'placeholder' => __( 'Ej. Reg. ICA 9263', 'cadv-woo-functionalities' ),
 			)
 		);
+
+		woocommerce_wp_textarea_input(
+			array(
+				'id'          => self::PRODUCT_DESC_META,
+				'label'       => __( 'Descripcion comercial-tecnica', 'cadv-woo-functionalities' ),
+				'desc_tip'    => true,
+				'description' => __( 'Descripcion breve que se mostrara en el marketplace. Tambien se puede importar por CSV.', 'cadv-woo-functionalities' ),
+				'placeholder' => __( 'Ej. Complejo NPK balanceado para programas de nutricion...', 'cadv-woo-functionalities' ),
+			)
+		);
+
+		echo '</div>';
 	}
 
 	/**
-	 * Save ICA field.
+	 * Save marketplace fields.
 	 *
 	 * @param WC_Product $product Product being saved.
 	 */
-	public function save_product_ica_field( $product ) {
+	public function save_product_marketplace_fields( $product ) {
 		if ( ! $product instanceof WC_Product || ! current_user_can( 'manage_woocommerce' ) ) {
 			return;
 		}
@@ -264,8 +311,214 @@ final class CADV_Woo_Functionalities_Marketplace {
 			return;
 		}
 
-		$value = isset( $_POST[ self::PRODUCT_ICA_META ] ) ? sanitize_text_field( wp_unslash( $_POST[ self::PRODUCT_ICA_META ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
-		$product->update_meta_data( self::PRODUCT_ICA_META, $value );
+		$this->save_text_meta_from_post( $product, self::PRODUCT_SEGMENT_META );
+		$this->save_text_meta_from_post( $product, self::PRODUCT_TYPE_META );
+		$this->save_text_meta_from_post( $product, self::PRODUCT_ICA_META );
+		$this->save_textarea_meta_from_post( $product, self::PRODUCT_DESC_META );
+
+		$commercial_description = $product->get_meta( self::PRODUCT_DESC_META );
+
+		if ( $commercial_description && ! $product->get_short_description() ) {
+			$product->set_short_description( $commercial_description );
+		}
+	}
+
+	/**
+	 * Add marketplace columns to the WooCommerce CSV importer mapping UI.
+	 *
+	 * @param array $options Mapping options.
+	 * @return array
+	 */
+	public function add_csv_mapping_options( $options ) {
+		return array_merge( $options, $this->get_csv_columns() );
+	}
+
+	/**
+	 * Auto-map common CSV headers.
+	 *
+	 * @param array $columns Default mappings.
+	 * @return array
+	 */
+	public function add_csv_mapping_default_columns( $columns ) {
+		return array_merge(
+			$columns,
+			array(
+				'Segmento'                        => 'cadv_segment',
+				'Linea comercial'                => 'cadv_line',
+				'Linea'                          => 'cadv_line',
+				'Tipo'                            => 'cadv_type',
+				'Descripcion comercial-tecnica'  => 'cadv_commercial_description',
+				'Descripcion comercial tecnica'  => 'cadv_commercial_description',
+				'Registro ICA'                    => 'cadv_ica_registration',
+				'ICA'                             => 'cadv_ica_registration',
+			)
+		);
+	}
+
+	/**
+	 * Persist marketplace columns during WooCommerce CSV import.
+	 *
+	 * @param WC_Product $product Product object.
+	 * @param array      $data    Imported data.
+	 * @return WC_Product
+	 */
+	public function import_product_marketplace_fields( $product, $data ) {
+		if ( ! $product instanceof WC_Product ) {
+			return $product;
+		}
+
+		$segment     = isset( $data['cadv_segment'] ) ? sanitize_text_field( $data['cadv_segment'] ) : '';
+		$type        = isset( $data['cadv_type'] ) ? sanitize_text_field( $data['cadv_type'] ) : '';
+		$description = isset( $data['cadv_commercial_description'] ) ? sanitize_textarea_field( $data['cadv_commercial_description'] ) : '';
+		$ica         = isset( $data['cadv_ica_registration'] ) ? sanitize_text_field( $data['cadv_ica_registration'] ) : '';
+		$line        = isset( $data['cadv_line'] ) ? sanitize_text_field( $data['cadv_line'] ) : '';
+
+		$product->update_meta_data( self::PRODUCT_SEGMENT_META, $segment );
+		$product->update_meta_data( self::PRODUCT_TYPE_META, $type );
+		$product->update_meta_data( self::PRODUCT_DESC_META, $description );
+		$product->update_meta_data( self::PRODUCT_ICA_META, $ica );
+
+		if ( $description && ! $product->get_short_description() ) {
+			$product->set_short_description( $description );
+		}
+
+		if ( $line ) {
+			$this->assign_imported_line_category( $product, $line );
+		}
+
+		return $product;
+	}
+
+	/**
+	 * Add marketplace columns to product CSV export.
+	 *
+	 * @param array $columns Export columns.
+	 * @return array
+	 */
+	public function add_export_columns( $columns ) {
+		return array_merge( $columns, $this->get_csv_columns() );
+	}
+
+	/**
+	 * Export segment column.
+	 *
+	 * @param string     $value   Current value.
+	 * @param WC_Product $product Product.
+	 * @return string
+	 */
+	public function export_segment_column( $value, $product ) {
+		return $product instanceof WC_Product ? $product->get_meta( self::PRODUCT_SEGMENT_META ) : $value;
+	}
+
+	/**
+	 * Export commercial line column.
+	 *
+	 * @param string     $value   Current value.
+	 * @param WC_Product $product Product.
+	 * @return string
+	 */
+	public function export_line_column( $value, $product ) {
+		$line = $product instanceof WC_Product ? $this->get_product_line( $product ) : null;
+
+		return $line ? $line['name'] : $value;
+	}
+
+	/**
+	 * Export type column.
+	 *
+	 * @param string     $value   Current value.
+	 * @param WC_Product $product Product.
+	 * @return string
+	 */
+	public function export_type_column( $value, $product ) {
+		return $product instanceof WC_Product ? $product->get_meta( self::PRODUCT_TYPE_META ) : $value;
+	}
+
+	/**
+	 * Export commercial description column.
+	 *
+	 * @param string     $value   Current value.
+	 * @param WC_Product $product Product.
+	 * @return string
+	 */
+	public function export_commercial_description_column( $value, $product ) {
+		return $product instanceof WC_Product ? $this->get_product_commercial_description( $product ) : $value;
+	}
+
+	/**
+	 * Export ICA column.
+	 *
+	 * @param string     $value   Current value.
+	 * @param WC_Product $product Product.
+	 * @return string
+	 */
+	public function export_ica_column( $value, $product ) {
+		return $product instanceof WC_Product ? $product->get_meta( self::PRODUCT_ICA_META ) : $value;
+	}
+
+	/**
+	 * Get marketplace CSV column definitions.
+	 *
+	 * @return array
+	 */
+	private function get_csv_columns() {
+		return array(
+			'cadv_segment'                => __( 'Segmento', 'cadv-woo-functionalities' ),
+			'cadv_line'                   => __( 'Linea comercial', 'cadv-woo-functionalities' ),
+			'cadv_type'                   => __( 'Tipo', 'cadv-woo-functionalities' ),
+			'cadv_commercial_description' => __( 'Descripcion comercial-tecnica', 'cadv-woo-functionalities' ),
+			'cadv_ica_registration'       => __( 'Registro ICA', 'cadv-woo-functionalities' ),
+		);
+	}
+
+	/**
+	 * Save a text product meta value from POST.
+	 *
+	 * @param WC_Product $product Product object.
+	 * @param string     $meta_key Meta key.
+	 */
+	private function save_text_meta_from_post( WC_Product $product, $meta_key ) {
+		$value = isset( $_POST[ $meta_key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $meta_key ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$product->update_meta_data( $meta_key, $value );
+	}
+
+	/**
+	 * Save a textarea product meta value from POST.
+	 *
+	 * @param WC_Product $product Product object.
+	 * @param string     $meta_key Meta key.
+	 */
+	private function save_textarea_meta_from_post( WC_Product $product, $meta_key ) {
+		$value = isset( $_POST[ $meta_key ] ) ? sanitize_textarea_field( wp_unslash( $_POST[ $meta_key ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$product->update_meta_data( $meta_key, $value );
+	}
+
+	/**
+	 * Assign imported commercial line as a parent product category.
+	 *
+	 * @param WC_Product $product Product object.
+	 * @param string     $line_name Commercial line name.
+	 */
+	private function assign_imported_line_category( WC_Product $product, $line_name ) {
+		$line_name = trim( wp_strip_all_tags( $line_name ) );
+
+		if ( '' === $line_name || ! taxonomy_exists( 'product_cat' ) ) {
+			return;
+		}
+
+		$term = term_exists( $line_name, 'product_cat', 0 );
+
+		if ( 0 === $term || null === $term ) {
+			$term = wp_insert_term( $line_name, 'product_cat', array( 'parent' => 0 ) );
+		}
+
+		if ( is_wp_error( $term ) || empty( $term['term_id'] ) ) {
+			return;
+		}
+
+		$category_ids = array_map( 'absint', $product->get_category_ids() );
+		$category_ids[] = absint( $term['term_id'] );
+		$product->set_category_ids( array_values( array_unique( array_filter( $category_ids ) ) ) );
 	}
 
 	/**
@@ -421,9 +674,9 @@ final class CADV_Woo_Functionalities_Marketplace {
 		$line        = $this->get_product_line( $product );
 		$line_name   = $line ? $line['name'] : __( 'Producto', 'cadv-woo-functionalities' );
 		$line_color  = $line ? $line['color'] : self::DEFAULT_LINE_COLOR;
+		$type        = sanitize_text_field( $product->get_meta( self::PRODUCT_TYPE_META ) );
 		$ica         = sanitize_text_field( $product->get_meta( self::PRODUCT_ICA_META ) );
-		$description = $product->get_short_description() ? $product->get_short_description() : $product->get_description();
-		$description = wp_trim_words( wp_strip_all_tags( $description ), 16 );
+		$description = wp_trim_words( wp_strip_all_tags( $this->get_product_commercial_description( $product ) ), 16 );
 		$whatsapp    = $this->get_whatsapp_url( $product );
 
 		ob_start();
@@ -442,6 +695,9 @@ final class CADV_Woo_Functionalities_Marketplace {
 			</div>
 			<div class="cadv-marketplace-card__body">
 				<h3><?php echo esc_html( $product->get_name() ); ?></h3>
+				<?php if ( $type ) : ?>
+					<p class="cadv-marketplace-card__type"><?php echo esc_html( $type ); ?></p>
+				<?php endif; ?>
 				<?php if ( $ica ) : ?>
 					<p class="cadv-marketplace-card__ica"><?php echo esc_html( $this->format_ica_registration( $ica ) ); ?></p>
 				<?php endif; ?>
@@ -496,6 +752,26 @@ final class CADV_Woo_Functionalities_Marketplace {
 		}
 
 		return $categories;
+	}
+
+	/**
+	 * Get commercial-technical description with WooCommerce fallbacks.
+	 *
+	 * @param WC_Product $product Product.
+	 * @return string
+	 */
+	private function get_product_commercial_description( WC_Product $product ) {
+		$description = $product->get_meta( self::PRODUCT_DESC_META );
+
+		if ( ! $description ) {
+			$description = $product->get_short_description();
+		}
+
+		if ( ! $description ) {
+			$description = $product->get_description();
+		}
+
+		return (string) $description;
 	}
 
 	/**
