@@ -26,11 +26,25 @@
 	display: none;
 }
 
+.cadv-marketplace__screen-reader-text {
+	border: 0;
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	white-space: nowrap;
+	width: 1px;
+}
+
 .cadv-marketplace__filter-toggle {
 	align-items: center;
 	background: #286b2d;
 	border: 1px solid #286b2d;
-	border-radius: 5px;
+	border-radius: 999px;
+	box-shadow: 0 14px 34px rgba(15, 23, 42, 0.24);
 	color: #ffffff;
 	cursor: pointer;
 	display: inline-flex;
@@ -39,9 +53,9 @@
 	font-weight: 700;
 	justify-content: center;
 	line-height: 1.2;
-	min-height: 42px;
-	padding: 10px 16px;
-	width: 100%;
+	min-height: 52px;
+	padding: 0;
+	width: 52px;
 }
 
 .cadv-marketplace__filter-toggle:hover,
@@ -50,6 +64,12 @@
 	border-color: #1f5624;
 	color: #ffffff;
 	outline: 0;
+}
+
+.cadv-marketplace__filter-icon {
+	display: block;
+	height: 25px;
+	width: 25px;
 }
 
 .cadv-marketplace__filters {
@@ -517,25 +537,37 @@
 
 	.cadv-marketplace__mobile-bar {
 		display: block;
+		position: fixed;
+		right: 20px;
+		bottom: 22px;
+		z-index: 9990;
 	}
 
 	.cadv-marketplace__filters {
 		border-width: 0;
-		display: block;
-		max-height: 0;
-		opacity: 0;
-		overflow: hidden;
+		box-shadow: 0 18px 54px rgba(15, 23, 42, 0.28);
+		display: none;
+		max-height: none;
+		overflow: auto;
 		pointer-events: none;
-		position: static;
-		width: 100%;
+		position: fixed;
+		right: 20px;
+		top: 18px;
+		bottom: 88px;
+		width: min(360px, calc(100vw - 40px));
+		z-index: 9989;
 	}
 
 	.cadv-marketplace.is-filter-open .cadv-marketplace__filters {
 		border-width: 1px;
-		max-height: 72vh;
-		opacity: 1;
+		display: block;
 		overflow: auto;
 		pointer-events: auto;
+	}
+
+	.cadv-marketplace.is-filter-open .cadv-marketplace__filter-toggle {
+		background: #1f5624;
+		border-color: #1f5624;
 	}
 
 	.cadv-marketplace__line-list {
@@ -572,6 +604,23 @@
 @media (max-width: 640px) {
 	.cadv-marketplace {
 		gap: 16px;
+	}
+
+	.cadv-marketplace__mobile-bar {
+		right: 14px;
+		bottom: 16px;
+	}
+
+	.cadv-marketplace__filter-toggle {
+		min-height: 50px;
+		width: 50px;
+	}
+
+	.cadv-marketplace__filters {
+		right: 12px;
+		top: 12px;
+		bottom: 76px;
+		width: calc(100vw - 24px);
 	}
 
 	.cadv-marketplace__filters-header {

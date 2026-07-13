@@ -119,8 +119,11 @@ final class CADV_Woo_Functionalities_Marketplace {
 		?>
 		<div class="cadv-marketplace" data-cadv-marketplace data-per-page="<?php echo esc_attr( $per_page ); ?>" data-columns="<?php echo esc_attr( $columns ); ?>" data-show-ica="<?php echo $show_ica_filter ? '1' : '0'; ?>" style="--cadv-marketplace-columns: <?php echo esc_attr( $columns ); ?>;">
 			<div class="cadv-marketplace__mobile-bar">
-				<button type="button" class="cadv-marketplace__filter-toggle" data-cadv-marketplace-filter-toggle aria-controls="<?php echo esc_attr( $filters_id ); ?>" aria-expanded="false">
-					<?php esc_html_e( 'Filtrar productos', 'cadv-woo-functionalities' ); ?>
+				<button type="button" class="cadv-marketplace__filter-toggle" data-cadv-marketplace-filter-toggle aria-controls="<?php echo esc_attr( $filters_id ); ?>" aria-expanded="false" aria-label="<?php esc_attr_e( 'Filtrar productos', 'cadv-woo-functionalities' ); ?>">
+					<svg class="cadv-marketplace__filter-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+						<path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" />
+					</svg>
+					<span class="cadv-marketplace__screen-reader-text"><?php esc_html_e( 'Filtrar productos', 'cadv-woo-functionalities' ); ?></span>
 				</button>
 			</div>
 
