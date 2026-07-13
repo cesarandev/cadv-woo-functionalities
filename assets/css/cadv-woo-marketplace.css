@@ -7,9 +7,19 @@
 	align-items: flex-start;
 	color: #222b2f;
 	display: grid;
+	font-family: "Exo", Arial, sans-serif;
 	gap: 30px;
 	grid-template-columns: 262px minmax(0, 1fr);
+	letter-spacing: 0;
 	width: 100%;
+}
+
+.cadv-marketplace button,
+.cadv-marketplace input,
+.cadv-marketplace select,
+.cadv-marketplace textarea {
+	font: inherit;
+	letter-spacing: 0;
 }
 
 .cadv-marketplace__filters {

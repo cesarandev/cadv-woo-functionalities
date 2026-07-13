@@ -7,14 +7,14 @@
 
 return array(
 	'plugin_slug'      => 'cadv-woo-functionalities',
-	'version'          => '1.1.9',
-	'package_file'     => __DIR__ . '/packages/cadv-woo-functionalities-1.1.9.zip',
+	'version'          => '1.1.10',
+	'package_file'     => __DIR__ . '/packages/cadv-woo-functionalities-1.1.10.zip',
 	'homepage'         => 'https://cesarandev.com/',
 	'requires'         => '6.0',
 	'tested'           => '6.6',
 	'requires_php'     => '7.4',
 	'description'      => 'Actualizacion privada de CADV Woo Functionalities.',
-	'changelog'        => '<ul><li>Campos de producto para carga masiva del marketplace.</li><li>Columnas CSV para segmento, linea, tipo, descripcion e ICA.</li></ul>',
+	'changelog'        => '<ul><li>Carga robusta de estilos del marketplace en Elementor.</li><li>Tipografia Exo aplicada al marketplace.</li></ul>',
 	'download_token'   => 'change-this-token',
 	'force_https_urls' => true,
 );

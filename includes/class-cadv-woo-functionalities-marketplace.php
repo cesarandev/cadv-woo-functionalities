@@ -114,6 +114,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 		$this->enqueue_assets();
 
 		ob_start();
+		$this->print_late_styles();
 		?>
 		<div class="cadv-marketplace" data-cadv-marketplace data-per-page="<?php echo esc_attr( $per_page ); ?>" data-columns="<?php echo esc_attr( $columns ); ?>" data-show-ica="<?php echo $show_ica_filter ? '1' : '0'; ?>" style="--cadv-marketplace-columns: <?php echo esc_attr( $columns ); ?>;">
 			<aside class="cadv-marketplace__filters" aria-label="<?php esc_attr_e( 'Filtros de marketplace', 'cadv-woo-functionalities' ); ?>">
@@ -526,9 +527,16 @@ final class CADV_Woo_Functionalities_Marketplace {
 	 */
 	private function enqueue_assets() {
 		wp_enqueue_style(
+			'cadv-woo-marketplace-font',
+			'https://fonts.googleapis.com/css2?family=Exo:wght@400;500;600;700;800&display=swap',
+			array(),
+			null
+		);
+
+		wp_enqueue_style(
 			'cadv-woo-marketplace',
 			CADV_WOO_FUNCTIONALITIES_URL . 'assets/css/cadv-woo-marketplace.css',
-			array(),
+			array( 'cadv-woo-marketplace-font' ),
 			CADV_WOO_FUNCTIONALITIES_VERSION
 		);
 
@@ -554,6 +562,17 @@ final class CADV_Woo_Functionalities_Marketplace {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Print styles when a page builder renders the shortcode after wp_head.
+	 */
+	private function print_late_styles() {
+		if ( ! did_action( 'wp_head' ) || wp_style_is( 'cadv-woo-marketplace', 'done' ) ) {
+			return;
+		}
+
+		wp_print_styles( array( 'cadv-woo-marketplace-font', 'cadv-woo-marketplace' ) );
 	}
 
 	/**
