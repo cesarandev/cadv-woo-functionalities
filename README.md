@@ -51,13 +51,19 @@ Los usuarios creados por el formulario de ficha tecnica ven un portal reducido e
 Usa este shortcode dentro de una plantilla o pagina de producto:
 
 ```text
-[cesarandev_ficha_tecnica]
+[cadv_ficha_tecnica]
 ```
 
 El shortcode detecta automaticamente el producto actual. Si necesitas usarlo fuera de una pagina de producto, puedes pasar el ID:
 
 ```text
-[cesarandev_ficha_tecnica product_id="123"]
+[cadv_ficha_tecnica product_id="123"]
+```
+
+Alias heredado compatible:
+
+```text
+[cesarandev_ficha_tecnica]
 ```
 
 ## Shortcode para CTAs al CRM

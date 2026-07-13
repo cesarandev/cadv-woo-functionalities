@@ -1,10 +1,14 @@
 .cesarandev-wf-product-actions {
 	clear: both;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
+	display: grid;
+	gap: 14px;
+	grid-template-columns: 1fr;
 	margin: 14px 0 20px;
 	width: 100%;
+}
+
+.cesarandev-wf-product-actions .cesarandev-wf-button {
+	width: 100% !important;
 }
 
 .single-product form.cart .quantity,
@@ -57,27 +61,29 @@
 }
 
 .cesarandev-wf-whatsapp-button {
-	background: #25d366;
-	color: #ffffff;
+	background: #ffffff;
+	border: 1px solid #25d366;
+	color: #14c857;
 }
 
 .cesarandev-wf-whatsapp-button:hover,
 .cesarandev-wf-whatsapp-button:focus {
-	background: #1ebe5d;
-	color: #ffffff;
+	background: #f3fff7;
+	border-color: #14c857;
+	color: #10b84d;
 }
 
 .cesarandev-wf-sheet-button {
-	background: #ffffff;
-	border: 1px solid #1f4f46;
-	color: #1f4f46;
+	background: var(--cesarandev-wf-accent, #2f7d3a);
+	border: 1px solid var(--cesarandev-wf-accent, #2f7d3a);
+	color: #ffffff;
 }
 
 .cesarandev-wf-sheet-button:hover,
 .cesarandev-wf-sheet-button:focus {
-	background: #f1f7f5;
-	border-color: #143a32;
-	color: #143a32;
+	background: var(--cesarandev-wf-accent, #2f7d3a);
+	border-color: var(--cesarandev-wf-accent, #2f7d3a);
+	color: #ffffff;
 }
 
 .cesarandev-wf-modal[hidden] {
@@ -516,6 +522,10 @@ body.cesarandev-wf-modal-open {
 @media (min-width: 768px) {
 	.cesarandev-wf-button {
 		width: auto;
+	}
+
+	.cesarandev-wf-product-actions .cesarandev-wf-button {
+		width: 100% !important;
 	}
 
 	.cesarandev-wf-cta__form {

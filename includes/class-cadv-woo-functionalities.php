@@ -79,6 +79,7 @@ final class CADV_Woo_Functionalities {
 		add_action( 'admin_post_' . self::CRM_UPDATE_ACTION, array( $this, 'handle_crm_update' ) );
 		add_action( 'admin_post_' . self::CRM_LEAD_UPDATE_ACTION, array( $this, 'handle_crm_lead_update' ) );
 		add_action( 'admin_post_' . self::DELETE_ACCOUNT_ACTION, array( $this, 'handle_account_deletion_request' ) );
+		add_shortcode( 'cadv_ficha_tecnica', array( $this, 'render_actions_shortcode' ) );
 		add_shortcode( 'cesarandev_ficha_tecnica', array( $this, 'render_actions_shortcode' ) );
 		add_shortcode( 'cesarandev_crm_cta', array( $this, 'render_crm_cta_shortcode' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( CADV_WOO_FUNCTIONALITIES_FILE ), array( $this, 'add_plugin_action_links' ) );
@@ -900,8 +901,9 @@ final class CADV_Woo_Functionalities {
 	/**
 	 * Render product action buttons via shortcode.
 	 *
-	 * Usage: [cesarandev_ficha_tecnica]
-	 * Optional fallback: [cesarandev_ficha_tecnica product_id="123"]
+	 * Usage: [cadv_ficha_tecnica]
+	 * Legacy alias: [cesarandev_ficha_tecnica]
+	 * Optional fallback: [cadv_ficha_tecnica product_id="123"]
 	 *
 	 * @param array $atts Shortcode attributes.
 	 * @return string
@@ -916,7 +918,7 @@ final class CADV_Woo_Functionalities {
 				'product_id' => 0,
 			),
 			$atts,
-			'cesarandev_ficha_tecnica'
+			'cadv_ficha_tecnica'
 		);
 
 		$product = $this->resolve_shortcode_product( absint( $atts['product_id'] ) );
@@ -1148,10 +1150,12 @@ final class CADV_Woo_Functionalities {
 			$this->rendered_action_products[ $product_id ] = true;
 		}
 
+		$line_color = $this->get_product_line_color( $product );
+
 		echo '<style>.single-product form.cart .quantity,.single-product form.cart .single_add_to_cart_button{display:none!important}.single-product form.cart{margin-bottom:0}</style>';
-		echo '<div class="cesarandev-wf-product-actions" style="clear:both;display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 20px;width:100%;">';
-		$this->render_whatsapp_button( $product );
+		echo '<div class="cesarandev-wf-product-actions" style="--cesarandev-wf-accent:' . esc_attr( $line_color ) . ';clear:both;display:grid;grid-template-columns:1fr;gap:14px;margin:14px 0 20px;width:100%;">';
 		$this->render_technical_sheet_button( $product );
+		$this->render_whatsapp_button( $product );
 		echo '</div>';
 	}
 
@@ -1237,11 +1241,11 @@ final class CADV_Woo_Functionalities {
 		}
 
 		printf(
-			'<a class="cesarandev-wf-button cesarandev-wf-whatsapp-button" style="align-items:center;background:#25d366;border:0;border-radius:6px;box-shadow:none;color:#fff;display:inline-flex;font-size:15px;font-weight:700;gap:8px;justify-content:center;line-height:1.2;min-height:44px;padding:12px 16px;text-decoration:none;width:auto;" href="%1$s" target="_blank" rel="noopener noreferrer" aria-label="%2$s">%3$s<span>%4$s</span></a>',
+			'<a class="cesarandev-wf-button cesarandev-wf-whatsapp-button" style="align-items:center;background:#fff;border:1px solid #25d366;border-radius:4px;box-shadow:none;color:#14c857;display:inline-flex;font-size:18px;font-weight:600;gap:10px;justify-content:center;line-height:1.2;min-height:42px;padding:11px 16px;text-decoration:none;width:100%;" href="%1$s" target="_blank" rel="noopener noreferrer" aria-label="%2$s">%3$s<span>%4$s</span></a>',
 			esc_url( $url ),
 			esc_attr__( 'Consultar este producto por WhatsApp', 'cadv-woo-functionalities' ),
 			$this->get_whatsapp_icon_svg(), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			esc_html__( 'Consultar aqui', 'cadv-woo-functionalities' )
+			esc_html__( 'Consultar por WhatsApp', 'cadv-woo-functionalities' )
 		);
 	}
 
@@ -1252,10 +1256,10 @@ final class CADV_Woo_Functionalities {
 	 */
 	private function render_technical_sheet_button( WC_Product $product ) {
 		printf(
-			'<button type="button" class="cesarandev-wf-button cesarandev-wf-sheet-button" style="align-items:center;background:#fff;border:1px solid #1f4f46;border-radius:6px;box-shadow:none;color:#1f4f46;cursor:pointer;display:inline-flex;font-size:15px;font-weight:700;gap:8px;justify-content:center;line-height:1.2;min-height:44px;padding:12px 16px;text-decoration:none;width:auto;" data-cesarandev-wf-open-modal data-product-id="%1$d">%2$s<span>%3$s</span></button>',
+			'<button type="button" class="cesarandev-wf-button cesarandev-wf-sheet-button" style="align-items:center;background:var(--cesarandev-wf-accent,#2f7d3a);border:1px solid var(--cesarandev-wf-accent,#2f7d3a);border-radius:4px;box-shadow:none;color:#fff;cursor:pointer;display:inline-flex;font-size:20px;font-weight:600;gap:12px;justify-content:center;line-height:1.2;min-height:60px;padding:14px 18px;text-decoration:none;width:100%;" data-cesarandev-wf-open-modal data-product-id="%1$d">%2$s<span>%3$s</span></button>',
 			absint( $product->get_id() ),
 			$this->get_document_icon_svg(), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			esc_html__( 'Ver ficha tecnica', 'cadv-woo-functionalities' )
+			esc_html__( 'Obtener ficha técnica', 'cadv-woo-functionalities' )
 		);
 	}
 
