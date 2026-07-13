@@ -155,7 +155,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 				<div class="cadv-marketplace__grid" data-cadv-marketplace-grid>
 					<?php echo $response['html']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</div>
-				<button type="button" class="cadv-marketplace__load-more" data-cadv-marketplace-load-more <?php echo $response['has_more'] ? '' : 'hidden'; ?>><?php esc_html_e( 'Cargar mas', 'cadv-woo-functionalities' ); ?></button>
+				<button type="button" class="cadv-marketplace__load-more" data-cadv-marketplace-load-more <?php echo $response['has_more'] ? '' : 'hidden'; ?>><?php esc_html_e( 'Cargar más', 'cadv-woo-functionalities' ); ?></button>
 			</section>
 		</div>
 		<?php

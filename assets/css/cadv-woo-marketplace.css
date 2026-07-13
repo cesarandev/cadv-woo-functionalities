@@ -452,6 +452,10 @@
 	opacity: 0.72;
 }
 
+.cadv-marketplace__load-more[hidden] {
+	display: none;
+}
+
 @media (max-width: 1024px) {
 	.cadv-marketplace {
 		gap: 22px;
