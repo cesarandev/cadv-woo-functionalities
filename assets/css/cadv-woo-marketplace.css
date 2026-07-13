@@ -81,6 +81,7 @@
 	color: #293238;
 	cursor: pointer;
 	display: grid;
+	font-family: "Poppins", Arial, sans-serif;
 	font-size: 15px;
 	gap: 10px;
 	grid-template-columns: 12px minmax(0, 1fr) auto;
@@ -113,6 +114,7 @@
 }
 
 .cadv-marketplace__line-name {
+	font-family: "Poppins", Arial, sans-serif;
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -121,6 +123,7 @@
 
 .cadv-marketplace__line-count {
 	color: #64748b;
+	font-family: "Poppins", Arial, sans-serif;
 	font-size: 13px;
 	font-weight: 700;
 }
