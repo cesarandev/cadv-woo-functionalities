@@ -1,0 +1,4 @@
+.agents/
+update-server/config.php
+update-server/packages/*
+!update-server/packages/.gitkeep
