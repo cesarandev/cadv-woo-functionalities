@@ -72,6 +72,82 @@
 	width: 25px;
 }
 
+.cadv-marketplace-search {
+	box-sizing: border-box;
+	font-family: "Poppins", Arial, sans-serif;
+	letter-spacing: 0;
+	margin: 0 auto;
+	max-width: 450px;
+	width: 100%;
+}
+
+.cadv-marketplace-search *,
+.cadv-marketplace-search *::before,
+.cadv-marketplace-search *::after {
+	box-sizing: border-box;
+}
+
+.cadv-marketplace-search__control {
+	align-items: center;
+	background: #ffffff;
+	border: 1px solid #cfd7e3;
+	border-radius: 7px;
+	display: flex;
+	gap: 12px;
+	min-height: 50px;
+	padding: 0 16px;
+	width: 100%;
+}
+
+.cadv-marketplace-search__control:focus-within {
+	border-color: #2f7d3a;
+	box-shadow: 0 0 0 1px #2f7d3a;
+}
+
+.cadv-marketplace-search__icon {
+	border: 2px solid #2f7d3a;
+	border-radius: 999px;
+	color: #2f7d3a;
+	display: block;
+	flex: 0 0 auto;
+	height: 15px;
+	position: relative;
+	width: 15px;
+}
+
+.cadv-marketplace-search__icon::after {
+	background: currentColor;
+	border-radius: 999px;
+	content: "";
+	display: block;
+	height: 2px;
+	position: absolute;
+	right: -6px;
+	top: 10px;
+	transform: rotate(45deg);
+	width: 7px;
+}
+
+.cadv-marketplace-search input {
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+	color: #1f2937;
+	flex: 1 1 auto;
+	font-family: "Poppins", Arial, sans-serif;
+	font-size: 15px;
+	height: 48px;
+	min-width: 0;
+	outline: 0;
+	padding: 0;
+	width: 100%;
+}
+
+.cadv-marketplace-search input::placeholder {
+	color: #98a2b3;
+	opacity: 1;
+}
+
 .cadv-marketplace__filters {
 	background: #f4efe6;
 	border: 1px solid #ded6c9;
@@ -604,6 +680,20 @@
 @media (max-width: 640px) {
 	.cadv-marketplace {
 		gap: 16px;
+	}
+
+	.cadv-marketplace-search {
+		max-width: none;
+	}
+
+	.cadv-marketplace-search__control {
+		min-height: 46px;
+		padding: 0 13px;
+	}
+
+	.cadv-marketplace-search input {
+		font-size: 14px;
+		height: 44px;
 	}
 
 	.cadv-marketplace__mobile-bar {

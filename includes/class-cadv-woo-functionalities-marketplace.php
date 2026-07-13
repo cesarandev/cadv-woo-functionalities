@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class CADV_Woo_Functionalities_Marketplace {
 	const SHORTCODE            = 'cadv_marketplace';
+	const SEARCH_SHORTCODE     = 'cadv_marketplace_search';
 	const AJAX_ACTION          = 'cadv_marketplace_products';
 	const NONCE_ACTION         = 'cadv_marketplace_products';
 	const TERM_COLOR_META      = '_cadv_marketplace_color';
@@ -52,6 +53,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 	 */
 	private function __construct() {
 		add_shortcode( self::SHORTCODE, array( $this, 'render_shortcode' ) );
+		add_shortcode( self::SEARCH_SHORTCODE, array( $this, 'render_search_shortcode' ) );
 		add_action( 'wp_ajax_' . self::AJAX_ACTION, array( $this, 'handle_ajax_products' ) );
 		add_action( 'wp_ajax_nopriv_' . self::AJAX_ACTION, array( $this, 'handle_ajax_products' ) );
 
@@ -101,15 +103,8 @@ final class CADV_Woo_Functionalities_Marketplace {
 		$categories      = $this->get_line_categories();
 		$search_id       = wp_unique_id( 'cadv-marketplace-search-' );
 		$filters_id      = wp_unique_id( 'cadv-marketplace-filters-' );
-		$response        = $this->get_products_response(
-			array(
-				'category' => 0,
-				'search'   => '',
-				'has_ica'  => false,
-				'page'     => 1,
-				'per_page' => $per_page,
-			)
-		);
+		$initial_filters = $this->get_url_filters( $per_page );
+		$response        = $this->get_products_response( $initial_filters );
 		$empty_message    = '' === $response['html'] ? __( 'No encontramos productos con estos filtros.', 'cadv-woo-functionalities' ) : '';
 
 		$this->enqueue_assets();
@@ -117,7 +112,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 		ob_start();
 		$this->print_late_styles();
 		?>
-		<div class="cadv-marketplace" data-cadv-marketplace data-per-page="<?php echo esc_attr( $per_page ); ?>" data-columns="<?php echo esc_attr( $columns ); ?>" data-show-ica="<?php echo $show_ica_filter ? '1' : '0'; ?>" style="--cadv-marketplace-columns: <?php echo esc_attr( $columns ); ?>;">
+		<div class="cadv-marketplace" data-cadv-marketplace data-per-page="<?php echo esc_attr( $per_page ); ?>" data-columns="<?php echo esc_attr( $columns ); ?>" data-show-ica="<?php echo $show_ica_filter ? '1' : '0'; ?>" data-initial-category="<?php echo esc_attr( $initial_filters['category'] ); ?>" data-initial-search="<?php echo esc_attr( $initial_filters['search'] ); ?>" data-initial-ica="<?php echo $initial_filters['has_ica'] ? '1' : '0'; ?>" style="--cadv-marketplace-columns: <?php echo esc_attr( $columns ); ?>;">
 			<div class="cadv-marketplace__mobile-bar">
 				<button type="button" class="cadv-marketplace__filter-toggle" data-cadv-marketplace-filter-toggle aria-controls="<?php echo esc_attr( $filters_id ); ?>" aria-expanded="false" aria-label="<?php esc_attr_e( 'Filtrar productos', 'cadv-woo-functionalities' ); ?>">
 					<svg class="cadv-marketplace__filter-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -135,7 +130,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 
 				<div class="cadv-marketplace__line-list" data-cadv-marketplace-lines>
 					<?php foreach ( $categories as $category ) : ?>
-						<button type="button" class="cadv-marketplace__line" data-cadv-marketplace-line="<?php echo esc_attr( $category['id'] ); ?>" style="--line-color: <?php echo esc_attr( $category['color'] ); ?>;">
+						<button type="button" class="cadv-marketplace__line <?php echo absint( $initial_filters['category'] ) === absint( $category['id'] ) ? 'is-active' : ''; ?>" data-cadv-marketplace-line="<?php echo esc_attr( $category['id'] ); ?>" style="--line-color: <?php echo esc_attr( $category['color'] ); ?>;">
 							<span class="cadv-marketplace__line-dot" aria-hidden="true"></span>
 							<span class="cadv-marketplace__line-name"><?php echo esc_html( $category['name'] ); ?></span>
 							<span class="cadv-marketplace__line-count">(<?php echo esc_html( $category['count'] ); ?>)</span>
@@ -145,7 +140,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 
 				<?php if ( $show_ica_filter ) : ?>
 					<label class="cadv-marketplace__toggle">
-						<input type="checkbox" data-cadv-marketplace-ica />
+						<input type="checkbox" data-cadv-marketplace-ica <?php checked( $initial_filters['has_ica'] ); ?> />
 						<span><?php esc_html_e( 'Con Registro ICA', 'cadv-woo-functionalities' ); ?></span>
 					</label>
 				<?php endif; ?>
@@ -154,7 +149,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 					<label for="<?php echo esc_attr( $search_id ); ?>"><?php esc_html_e( 'Buscar producto', 'cadv-woo-functionalities' ); ?></label>
 					<div class="cadv-marketplace__search-control">
 						<span class="cadv-marketplace__search-icon" aria-hidden="true"></span>
-						<input id="<?php echo esc_attr( $search_id ); ?>" type="search" data-cadv-marketplace-search placeholder="<?php esc_attr_e( 'Nombre, formula o cultivo...', 'cadv-woo-functionalities' ); ?>" />
+						<input id="<?php echo esc_attr( $search_id ); ?>" type="search" data-cadv-marketplace-search value="<?php echo esc_attr( $initial_filters['search'] ); ?>" placeholder="<?php esc_attr_e( 'Nombre, formula o cultivo...', 'cadv-woo-functionalities' ); ?>" />
 					</div>
 				</div>
 			</aside>
@@ -168,6 +163,42 @@ final class CADV_Woo_Functionalities_Marketplace {
 				<button type="button" class="cadv-marketplace__load-more" data-cadv-marketplace-load-more <?php echo $response['has_more'] ? '' : 'hidden'; ?>><?php esc_html_e( 'Cargar más', 'cadv-woo-functionalities' ); ?></button>
 			</section>
 		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Render an external marketplace search form.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_search_shortcode( $atts = array() ) {
+		$atts = shortcode_atts(
+			array(
+				'target'      => '',
+				'placeholder' => __( 'Buscar por producto, formula o cultivo...', 'cadv-woo-functionalities' ),
+			),
+			$atts,
+			self::SEARCH_SHORTCODE
+		);
+
+		$this->enqueue_assets();
+
+		$target      = $this->get_search_target_url( $atts['target'] );
+		$search_id   = wp_unique_id( 'cadv-marketplace-external-search-' );
+		$query_value = isset( $_GET['cadv_search'] ) ? sanitize_text_field( wp_unslash( $_GET['cadv_search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		ob_start();
+		$this->print_late_styles();
+		?>
+		<form class="cadv-marketplace-search" action="<?php echo esc_url( $target ); ?>" method="get" role="search">
+			<label class="cadv-marketplace__screen-reader-text" for="<?php echo esc_attr( $search_id ); ?>"><?php esc_html_e( 'Buscar productos', 'cadv-woo-functionalities' ); ?></label>
+			<div class="cadv-marketplace-search__control">
+				<span class="cadv-marketplace-search__icon" aria-hidden="true"></span>
+				<input id="<?php echo esc_attr( $search_id ); ?>" name="cadv_search" type="search" value="<?php echo esc_attr( $query_value ); ?>" placeholder="<?php echo esc_attr( $atts['placeholder'] ); ?>" />
+			</div>
+		</form>
 		<?php
 		return ob_get_clean();
 	}
@@ -586,6 +617,32 @@ final class CADV_Woo_Functionalities_Marketplace {
 	}
 
 	/**
+	 * Get the target URL for the external search form.
+	 *
+	 * @param string $target User-provided target URL.
+	 * @return string
+	 */
+	private function get_search_target_url( $target ) {
+		$target = trim( (string) $target );
+
+		if ( '' !== $target ) {
+			return esc_url_raw( $target );
+		}
+
+		$queried_id = get_queried_object_id();
+
+		if ( $queried_id ) {
+			$permalink = get_permalink( $queried_id );
+
+			if ( $permalink ) {
+				return $permalink;
+			}
+		}
+
+		return home_url( '/' );
+	}
+
+	/**
 	 * Build filters from AJAX request.
 	 *
 	 * @return array
@@ -597,6 +654,22 @@ final class CADV_Woo_Functionalities_Marketplace {
 			'has_ica'  => isset( $_POST['has_ica'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['has_ica'] ) ),
 			'page'     => isset( $_POST['page'] ) ? max( 1, absint( $_POST['page'] ) ) : 1,
 			'per_page' => isset( $_POST['per_page'] ) ? $this->sanitize_per_page( $_POST['per_page'] ) : self::DEFAULT_PER_PAGE,
+		);
+	}
+
+	/**
+	 * Build initial filters from URL parameters.
+	 *
+	 * @param int $per_page Products per page.
+	 * @return array
+	 */
+	private function get_url_filters( $per_page ) {
+		return array(
+			'category' => isset( $_GET['cadv_line'] ) ? absint( $_GET['cadv_line'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			'search'   => isset( $_GET['cadv_search'] ) ? sanitize_text_field( wp_unslash( $_GET['cadv_search'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			'has_ica'  => isset( $_GET['cadv_ica'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['cadv_ica'] ) ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			'page'     => 1,
+			'per_page' => $per_page,
 		);
 	}
 

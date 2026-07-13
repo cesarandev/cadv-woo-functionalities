@@ -52,9 +52,9 @@
 		var lineButtons = root.querySelectorAll('[data-cadv-marketplace-line]');
 		var debounceTimer = null;
 		var state = {
-			category: '',
-			search: '',
-			hasIca: false,
+			category: root.getAttribute('data-initial-category') || '',
+			search: search ? search.value.trim() : (root.getAttribute('data-initial-search') || ''),
+			hasIca: ica ? Boolean(ica.checked) : root.getAttribute('data-initial-ica') === '1',
 			page: 1,
 			maxPages: loadMore && !loadMore.hidden ? 2 : 1,
 			perPage: parseInt(root.getAttribute('data-per-page'), 10) || 12
