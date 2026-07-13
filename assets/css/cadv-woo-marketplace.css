@@ -482,8 +482,7 @@
 	}
 
 	.cadv-marketplace__filters {
-		position: static;
-		width: 100%;
+		display: none;
 	}
 
 	.cadv-marketplace__line-list {
@@ -509,7 +508,7 @@
 	}
 
 	.cadv-marketplace__filters {
-		position: static;
+		display: none;
 	}
 
 	.cadv-marketplace__grid {
