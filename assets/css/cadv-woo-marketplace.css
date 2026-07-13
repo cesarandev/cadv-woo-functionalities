@@ -133,6 +133,7 @@
 	border-top: 1px solid #ded6c9;
 	color: #38444b;
 	display: flex;
+	font-family: "Poppins", Arial, sans-serif;
 	font-size: 14px;
 	font-weight: 800;
 	gap: 9px;
@@ -152,6 +153,7 @@
 .cadv-marketplace__search label {
 	color: #374151;
 	display: block;
+	font-family: "Poppins", Arial, sans-serif;
 	font-size: 13px;
 	font-weight: 800;
 	line-height: 1.2;
@@ -196,6 +198,7 @@
 	border: 0;
 	box-shadow: none;
 	color: #1f2937;
+	font-family: "Poppins", Arial, sans-serif;
 	font-size: 14px;
 	height: 38px;
 	min-width: 0;
