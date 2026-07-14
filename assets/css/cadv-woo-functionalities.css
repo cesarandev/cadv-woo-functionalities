@@ -86,6 +86,17 @@
 	color: #ffffff;
 }
 
+.cesarandev-wf-sheet-button[disabled],
+.cesarandev-wf-sheet-button.is-disabled,
+.cesarandev-wf-sheet-button.is-disabled:hover,
+.cesarandev-wf-sheet-button.is-disabled:focus {
+	background: #e5e7eb !important;
+	border-color: #d1d5db !important;
+	color: #6b7280 !important;
+	cursor: not-allowed;
+	transform: none;
+}
+
 .cesarandev-wf-modal[hidden] {
 	display: none;
 }

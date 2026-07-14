@@ -66,6 +66,8 @@ Alias heredado compatible:
 [cesarandev_ficha_tecnica]
 ```
 
+Si el producto no tiene archivos descargables configurados en WooCommerce, el boton de ficha se muestra deshabilitado con el texto `Sin ficha existente`.
+
 ## Shortcode para CTAs al CRM
 
 Usa este shortcode para un formulario de cotizacion general:

@@ -1180,6 +1180,10 @@ final class CADV_Woo_Functionalities {
 	private function render_product_modal( WC_Product $product ) {
 		$product_id = $product->get_id();
 
+		if ( ! $this->product_has_downloads( $product ) ) {
+			return;
+		}
+
 		if ( isset( $this->rendered_modal_products[ $product_id ] ) ) {
 			return;
 		}
@@ -1255,6 +1259,15 @@ final class CADV_Woo_Functionalities {
 	 * @param WC_Product $product WooCommerce product.
 	 */
 	private function render_technical_sheet_button( WC_Product $product ) {
+		if ( ! $this->product_has_downloads( $product ) ) {
+			printf(
+				'<button type="button" class="cesarandev-wf-button cesarandev-wf-sheet-button is-disabled" style="align-items:center;background:#e5e7eb;border:1px solid #d1d5db;border-radius:4px;box-shadow:none;color:#6b7280;cursor:not-allowed;display:inline-flex;font-size:20px;font-weight:600;gap:12px;justify-content:center;line-height:1.2;min-height:60px;padding:14px 18px;text-decoration:none;width:100%%;" disabled aria-disabled="true">%1$s<span>%2$s</span></button>',
+				$this->get_document_icon_svg(), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				esc_html__( 'Sin ficha existente', 'cadv-woo-functionalities' )
+			);
+			return;
+		}
+
 		printf(
 			'<button type="button" class="cesarandev-wf-button cesarandev-wf-sheet-button" style="align-items:center;background:var(--cesarandev-wf-accent,#2f7d3a);border:1px solid var(--cesarandev-wf-accent,#2f7d3a);border-radius:4px;box-shadow:none;color:#fff;cursor:pointer;display:inline-flex;font-size:20px;font-weight:600;gap:12px;justify-content:center;line-height:1.2;min-height:60px;padding:14px 18px;text-decoration:none;width:100%%;" data-cesarandev-wf-open-modal data-product-id="%1$d">%2$s<span>%3$s</span></button>',
 			absint( $product->get_id() ),

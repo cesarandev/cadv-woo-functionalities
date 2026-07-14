@@ -3,7 +3,7 @@
  * Plugin Name: CADV Woo Functionalities
  * Plugin URI: https://cesarandev.com/
  * Description: Agrega botones comerciales, solicitudes de ficha tecnica, CTAs y CRM para WooCommerce.
- * Version: 1.1.28
+ * Version: 1.1.29
  * Author: CADV
  * Author URI: https://cesarandev.com/
  * Text Domain: cadv-woo-functionalities
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'CADV_WOO_FUNCTIONALITIES_VERSION' ) ) {
-	define( 'CADV_WOO_FUNCTIONALITIES_VERSION', '1.1.28' );
+	define( 'CADV_WOO_FUNCTIONALITIES_VERSION', '1.1.29' );
 }
 
 if ( ! defined( 'CADV_WOO_FUNCTIONALITIES_FILE' ) ) {
