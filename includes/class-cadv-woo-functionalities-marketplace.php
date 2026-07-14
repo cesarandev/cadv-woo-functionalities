@@ -1081,7 +1081,6 @@ final class CADV_Woo_Functionalities_Marketplace {
 		$type        = sanitize_text_field( $product->get_meta( self::PRODUCT_TYPE_META ) );
 		$ica         = sanitize_text_field( $product->get_meta( self::PRODUCT_ICA_META ) );
 		$description = wp_trim_words( wp_strip_all_tags( $this->get_product_commercial_description( $product ) ), 16 );
-		$whatsapp    = $this->get_whatsapp_url( $product );
 
 		ob_start();
 		?>
@@ -1110,12 +1109,6 @@ final class CADV_Woo_Functionalities_Marketplace {
 				<?php endif; ?>
 				<div class="cadv-marketplace-card__actions">
 					<a class="cadv-marketplace-card__button cadv-marketplace-card__button--primary" href="<?php echo esc_url( get_permalink( $product->get_id() ) ); ?>"><?php esc_html_e( 'Ver producto', 'cadv-woo-functionalities' ); ?></a>
-					<?php if ( $whatsapp ) : ?>
-						<a class="cadv-marketplace-card__button cadv-marketplace-card__button--whatsapp" href="<?php echo esc_url( $whatsapp ); ?>" target="_blank" rel="noopener noreferrer">
-							<span aria-hidden="true">WA</span>
-							<?php esc_html_e( 'WhatsApp', 'cadv-woo-functionalities' ); ?>
-						</a>
-					<?php endif; ?>
 				</div>
 			</div>
 		</article>

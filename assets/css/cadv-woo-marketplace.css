@@ -519,19 +519,6 @@
 	color: #ffffff;
 }
 
-.cadv-marketplace-card__button--whatsapp {
-	background: #ffffff;
-	border: 1px solid #1fd764;
-	color: #12bf53;
-}
-
-.cadv-marketplace-card__button--whatsapp:hover,
-.cadv-marketplace-card__button--whatsapp:focus {
-	background: #effdf4;
-	border-color: #12bf53;
-	color: #0e9f43;
-}
-
 .cadv-marketplace__load-more {
 	background: var(--cadv-green, #203212);
 	border: 1px solid var(--cadv-green, #203212);
