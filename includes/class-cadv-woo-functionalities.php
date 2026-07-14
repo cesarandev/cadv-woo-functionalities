@@ -1017,8 +1017,7 @@ final class CADV_Woo_Functionalities {
 		$this->enqueue_frontend_assets();
 
 		return sprintf(
-			'<span class="cesarandev-wf-category-pill" style="--cesarandev-wf-accent:%1$s;">%2$s</span>',
-			esc_attr( $this->get_term_line_color( $line->term_id ) ),
+			'<span class="cesarandev-wf-category-pill">%s</span>',
 			esc_html( $line->name )
 		);
 	}

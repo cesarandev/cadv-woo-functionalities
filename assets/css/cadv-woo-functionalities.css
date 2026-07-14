@@ -1,3 +1,13 @@
+.cesarandev-wf-product-actions,
+.cesarandev-wf-modal,
+.cesarandev-wf-cta,
+.cesarandev-wf-ica-registration,
+.cesarandev-wf-category-pill {
+	--cadv-green: #2f7d3a;
+	--cadv-green-dark: #286b2d;
+	--cadv-green-soft: #e5f4e7;
+}
+
 .cesarandev-wf-product-actions {
 	clear: both;
 	display: grid;
@@ -117,9 +127,9 @@
 }
 
 .cesarandev-wf-category-pill {
-	background: #e5f4e7;
+	background: var(--cadv-green-soft, #e5f4e7);
 	border-radius: 999px;
-	color: var(--cesarandev-wf-accent, #2f7d3a);
+	color: var(--cadv-green-dark, #286b2d);
 	display: inline-flex;
 	font-family: "Exo", Arial, sans-serif;
 	font-size: 16px;
