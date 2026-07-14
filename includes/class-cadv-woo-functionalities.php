@@ -25,7 +25,7 @@ final class CADV_Woo_Functionalities {
 	const LEAD_POST_TYPE          = 'cesarandev_wf_lead';
 	const MARKETPLACE_TERM_COLOR_META = '_cadv_marketplace_color';
 	const PRODUCT_ICA_META        = '_cadv_marketplace_ica_registration';
-	const DEFAULT_LINE_COLOR      = '#2f7d3a';
+	const DEFAULT_LINE_COLOR      = '#203212';
 
 	/**
 	 * Singleton instance.
@@ -1356,7 +1356,7 @@ final class CADV_Woo_Functionalities {
 		}
 
 		printf(
-			'<button type="button" class="cesarandev-wf-button cesarandev-wf-sheet-button" style="align-items:center;background:var(--cesarandev-wf-accent,#2f7d3a);border:1px solid var(--cesarandev-wf-accent,#2f7d3a);border-radius:4px;box-shadow:none;color:#fff;cursor:pointer;display:inline-flex;font-size:20px;font-weight:600;gap:12px;justify-content:center;line-height:1.2;min-height:60px;padding:14px 18px;text-decoration:none;width:100%%;" data-cesarandev-wf-open-modal data-product-id="%1$d">%2$s<span>%3$s</span></button>',
+			'<button type="button" class="cesarandev-wf-button cesarandev-wf-sheet-button" style="align-items:center;background:var(--cesarandev-wf-accent,#203212);border:1px solid var(--cesarandev-wf-accent,#203212);border-radius:4px;box-shadow:none;color:#fff;cursor:pointer;display:inline-flex;font-size:20px;font-weight:600;gap:12px;justify-content:center;line-height:1.2;min-height:60px;padding:14px 18px;text-decoration:none;width:100%%;" data-cesarandev-wf-open-modal data-product-id="%1$d">%2$s<span>%3$s</span></button>',
 			absint( $product->get_id() ),
 			$this->get_document_icon_svg(), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			esc_html__( 'Obtener ficha técnica', 'cadv-woo-functionalities' )

@@ -22,7 +22,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 	const PRODUCT_TYPE_META    = '_cadv_marketplace_product_type';
 	const PRODUCT_DESC_META    = '_cadv_marketplace_commercial_technical_description';
 	const PRODUCT_ICA_META     = '_cadv_marketplace_ica_registration';
-	const DEFAULT_LINE_COLOR   = '#2f7d3a';
+	const DEFAULT_LINE_COLOR   = '#203212';
 	const DEFAULT_PER_PAGE     = 12;
 	const DEFAULT_COLUMNS      = 3;
 	const OPTION_PHONE         = 'cadv_woo_functionalities_whatsapp_phone';

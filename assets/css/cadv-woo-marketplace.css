@@ -4,6 +4,9 @@
 }
 
 .cadv-marketplace {
+	--cadv-green: #203212;
+	--cadv-green-soft: #e5f4e7;
+	--cadv-filter-bg: #F5F0E8;
 	align-items: flex-start;
 	color: #222b2f;
 	display: grid;
@@ -41,8 +44,8 @@
 
 .cadv-marketplace__filter-toggle {
 	align-items: center;
-	background: #286b2d;
-	border: 1px solid #286b2d;
+	background: var(--cadv-green, #203212);
+	border: 1px solid var(--cadv-green, #203212);
 	border-radius: 999px;
 	box-shadow: 0 14px 34px rgba(15, 23, 42, 0.24);
 	color: #ffffff;
@@ -60,8 +63,8 @@
 
 .cadv-marketplace__filter-toggle:hover,
 .cadv-marketplace__filter-toggle:focus {
-	background: #1f5624;
-	border-color: #1f5624;
+	background: var(--cadv-green, #203212);
+	border-color: var(--cadv-green, #203212);
 	color: #ffffff;
 	outline: 0;
 }
@@ -100,8 +103,8 @@
 }
 
 .cadv-marketplace-search__control:focus-within {
-	border-color: #2f7d3a;
-	box-shadow: 0 0 0 1px #2f7d3a;
+	border-color: var(--cadv-green, #203212);
+	box-shadow: 0 0 0 1px var(--cadv-green, #203212);
 }
 
 .cadv-marketplace-search input {
@@ -125,7 +128,7 @@
 }
 
 .cadv-marketplace__filters {
-	background: #f4efe6;
+	background: var(--cadv-filter-bg, #F5F0E8);
 	border: 1px solid #ded6c9;
 	border-radius: 8px;
 	overflow: hidden;
@@ -135,7 +138,7 @@
 
 .cadv-marketplace__filters-header {
 	align-items: center;
-	background: #286b2d;
+	background: var(--cadv-green, #203212);
 	color: #ffffff;
 	display: flex;
 	font-family: "Exo", Arial, sans-serif;
@@ -201,14 +204,14 @@
 }
 
 .cadv-marketplace__line.is-active {
-	background: #e1f2e2;
-	border-left-color: var(--line-color, #2f7d3a);
-	color: #256a2a;
+	background: var(--cadv-green-soft, #e5f4e7);
+	border-left-color: var(--line-color, var(--cadv-green, #203212));
+	color: var(--cadv-green, #203212);
 	font-weight: 800;
 }
 
 .cadv-marketplace__line-dot {
-	background: var(--line-color, #2f7d3a);
+	background: var(--line-color, var(--cadv-green, #203212));
 	border-radius: 999px;
 	display: block;
 	height: 9px;
@@ -244,7 +247,7 @@
 }
 
 .cadv-marketplace__toggle input {
-	accent-color: #286b2d;
+	accent-color: var(--cadv-green, #203212);
 }
 
 .cadv-marketplace__search {
@@ -374,7 +377,7 @@
 }
 
 .cadv-marketplace-card__badge {
-	background: var(--line-color, #2f7d3a);
+	background: var(--line-color, var(--cadv-green, #203212));
 	border-radius: 0 0 0 5px;
 	color: #ffffff;
 	font-family: "Exo", Arial, sans-serif;
@@ -410,7 +413,7 @@
 
 .cadv-marketplace-card__placeholder span {
 	align-items: center;
-	background: var(--line-color, #2f7d3a);
+	background: var(--line-color, var(--cadv-green, #203212));
 	border-radius: 14px;
 	box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
 	color: #ffffff;
@@ -462,7 +465,7 @@
 }
 
 .cadv-marketplace-card__ica::before {
-	border: 1px solid #2f7d3a;
+	border: 1px solid var(--cadv-green, #203212);
 	border-radius: 999px;
 	content: "";
 	display: inline-block;
@@ -504,15 +507,15 @@
 }
 
 .cadv-marketplace-card__button--primary {
-	background: var(--line-color, #286b2d);
-	border: 1px solid var(--line-color, #286b2d);
+	background: var(--line-color, var(--cadv-green, #203212));
+	border: 1px solid var(--line-color, var(--cadv-green, #203212));
 	color: #ffffff;
 }
 
 .cadv-marketplace-card__button--primary:hover,
 .cadv-marketplace-card__button--primary:focus {
-	background: var(--line-color, #286b2d);
-	border-color: var(--line-color, #286b2d);
+	background: var(--line-color, var(--cadv-green, #203212));
+	border-color: var(--line-color, var(--cadv-green, #203212));
 	color: #ffffff;
 }
 
@@ -530,8 +533,8 @@
 }
 
 .cadv-marketplace__load-more {
-	background: #286b2d;
-	border: 1px solid #286b2d;
+	background: var(--cadv-green, #203212);
+	border: 1px solid var(--cadv-green, #203212);
 	border-radius: 4px;
 	color: #ffffff;
 	cursor: pointer;
@@ -545,8 +548,8 @@
 
 .cadv-marketplace__load-more:hover,
 .cadv-marketplace__load-more:focus {
-	background: #1f5624;
-	border-color: #1f5624;
+	background: var(--cadv-green, #203212);
+	border-color: var(--cadv-green, #203212);
 }
 
 .cadv-marketplace__load-more[disabled] {
@@ -618,8 +621,8 @@
 	}
 
 	.cadv-marketplace.is-filter-open .cadv-marketplace__filter-toggle {
-		background: #1f5624;
-		border-color: #1f5624;
+		background: var(--cadv-green, #203212);
+		border-color: var(--cadv-green, #203212);
 	}
 
 	.cadv-marketplace__line-list {

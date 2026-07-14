@@ -3,8 +3,8 @@
 .cesarandev-wf-cta,
 .cesarandev-wf-ica-registration,
 .cesarandev-wf-category-pill {
-	--cadv-green: #2f7d3a;
-	--cadv-green-dark: #286b2d;
+	--cadv-green: #203212;
+	--cadv-green-dark: #203212;
 	--cadv-green-soft: #e5f4e7;
 }
 
@@ -84,15 +84,15 @@
 }
 
 .cesarandev-wf-sheet-button {
-	background: var(--cesarandev-wf-accent, #2f7d3a);
-	border: 1px solid var(--cesarandev-wf-accent, #2f7d3a);
+	background: var(--cesarandev-wf-accent, #203212);
+	border: 1px solid var(--cesarandev-wf-accent, #203212);
 	color: #ffffff;
 }
 
 .cesarandev-wf-sheet-button:hover,
 .cesarandev-wf-sheet-button:focus {
-	background: var(--cesarandev-wf-accent, #2f7d3a);
-	border-color: var(--cesarandev-wf-accent, #2f7d3a);
+	background: var(--cesarandev-wf-accent, #203212);
+	border-color: var(--cesarandev-wf-accent, #203212);
 	color: #ffffff;
 }
 
@@ -119,7 +119,7 @@
 }
 
 .cesarandev-wf-ica-registration__dot {
-	border: 1px solid var(--cesarandev-wf-accent, #2f7d3a);
+	border: 1px solid var(--cesarandev-wf-accent, #203212);
 	border-radius: 999px;
 	display: inline-block;
 	height: 9px;
@@ -129,7 +129,7 @@
 .cesarandev-wf-category-pill {
 	background: var(--cadv-green-soft, #e5f4e7);
 	border-radius: 999px;
-	color: var(--cadv-green-dark, #286b2d);
+	color: var(--cadv-green-dark, #203212);
 	display: inline-flex;
 	font-family: "Exo", Arial, sans-serif;
 	font-size: 16px;
@@ -144,7 +144,7 @@
 
 .cesarandev-wf-modal {
 	align-items: center;
-	--cesarandev-wf-accent: #2f7d3a;
+	--cesarandev-wf-accent: #203212;
 	bottom: 0;
 	display: flex;
 	justify-content: center;
@@ -213,9 +213,9 @@
 .cesarandev-wf-modal__close {
 	align-items: center;
 	background: transparent;
-	border: 1px solid var(--cesarandev-wf-accent, #2f7d3a);
+	border: 1px solid var(--cesarandev-wf-accent, #203212);
 	border-radius: 2px;
-	color: var(--cesarandev-wf-accent, #2f7d3a);
+	color: var(--cesarandev-wf-accent, #203212);
 	cursor: pointer;
 	display: inline-flex;
 	font-family: "Poppins", Arial, sans-serif;
@@ -268,8 +268,8 @@
 }
 
 .cesarandev-wf-form input:focus {
-	border-color: var(--cesarandev-wf-accent, #2f7d3a);
-	box-shadow: 0 0 0 1px var(--cesarandev-wf-accent, #2f7d3a);
+	border-color: var(--cesarandev-wf-accent, #203212);
+	box-shadow: 0 0 0 1px var(--cesarandev-wf-accent, #203212);
 	outline: 0;
 }
 
@@ -301,7 +301,7 @@
 }
 
 .cesarandev-wf-form__privacy a {
-	color: var(--cesarandev-wf-accent, #2f7d3a);
+	color: var(--cesarandev-wf-accent, #203212);
 	font-weight: 700;
 	text-decoration: underline;
 }
@@ -335,8 +335,8 @@
 
 .cesarandev-wf-form__submit {
 	align-items: center;
-	background: var(--cesarandev-wf-accent, #2f7d3a);
-	border: 1px solid var(--cesarandev-wf-accent, #2f7d3a);
+	background: var(--cesarandev-wf-accent, #203212);
+	border: 1px solid var(--cesarandev-wf-accent, #203212);
 	border-radius: 3px;
 	color: #ffffff;
 	cursor: pointer;
@@ -353,8 +353,8 @@
 
 .cesarandev-wf-form__submit:hover,
 .cesarandev-wf-form__submit:focus {
-	background: var(--cesarandev-wf-accent, #2f7d3a);
-	border-color: var(--cesarandev-wf-accent, #2f7d3a);
+	background: var(--cesarandev-wf-accent, #203212);
+	border-color: var(--cesarandev-wf-accent, #203212);
 	color: #ffffff;
 }
 
@@ -438,7 +438,7 @@ body.cesarandev-wf-modal-open {
 
 .cesarandev-wf-cta__eyebrow {
 	align-items: center;
-	color: #2f7d3a;
+	color: var(--cadv-green, #203212);
 	display: inline-flex;
 	font-size: 12px;
 	font-weight: 800;
@@ -450,7 +450,7 @@ body.cesarandev-wf-modal-open {
 }
 
 .cesarandev-wf-cta__eyebrow::before {
-	background: #2f7d3a;
+	background: var(--cadv-green, #203212);
 	content: "";
 	display: inline-block;
 	height: 2px;
@@ -492,7 +492,7 @@ body.cesarandev-wf-modal-open {
 }
 
 .cesarandev-wf-cta__field span::after {
-	color: #2f7d3a;
+	color: var(--cadv-green, #203212);
 }
 
 .cesarandev-wf-cta__field input,
@@ -516,8 +516,8 @@ body.cesarandev-wf-modal-open {
 
 .cesarandev-wf-cta__field input:focus,
 .cesarandev-wf-cta__field select:focus {
-	border-color: #2f7d3a;
-	box-shadow: 0 0 0 1px #2f7d3a;
+	border-color: var(--cadv-green, #203212);
+	box-shadow: 0 0 0 1px var(--cadv-green, #203212);
 	outline: 0;
 }
 
@@ -537,7 +537,7 @@ body.cesarandev-wf-modal-open {
 }
 
 .cesarandev-wf-cta__privacy a {
-	color: #2f7d3a;
+	color: var(--cadv-green, #203212);
 	text-decoration: underline;
 }
 
@@ -547,7 +547,7 @@ body.cesarandev-wf-modal-open {
 }
 
 .cesarandev-wf-cta__submit {
-	background: #2e7d32;
+	background: var(--cadv-green, #203212);
 	border: 0;
 	border-radius: 3px;
 	color: #ffffff;
@@ -562,7 +562,7 @@ body.cesarandev-wf-modal-open {
 
 .cesarandev-wf-cta__submit:hover,
 .cesarandev-wf-cta__submit:focus {
-	background: #256a2a;
+	background: var(--cadv-green, #203212);
 	color: #ffffff;
 }
 
