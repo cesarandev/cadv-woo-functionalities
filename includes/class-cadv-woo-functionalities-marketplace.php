@@ -187,7 +187,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 
 		$target      = $this->get_search_target_url( $atts['target'] );
 		$search_id   = wp_unique_id( 'cadv-marketplace-external-search-' );
-		$query_value = isset( $_GET['cadv_search'] ) ? sanitize_text_field( wp_unslash( $_GET['cadv_search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$query_value = $this->get_url_search_value();
 
 		ob_start();
 		$this->print_late_styles();
@@ -664,13 +664,144 @@ final class CADV_Woo_Functionalities_Marketplace {
 	 * @return array
 	 */
 	private function get_url_filters( $per_page ) {
+		$line_value = $this->get_first_url_value(
+			array(
+				'cadv_line',
+				'linea',
+				'line',
+				'categoria',
+				'category',
+				'product_cat',
+			)
+		);
+		$ica_value  = $this->get_first_url_value(
+			array(
+				'cadv_ica',
+				'ica',
+				'registro_ica',
+				'has_ica',
+			)
+		);
+
 		return array(
-			'category' => isset( $_GET['cadv_line'] ) ? absint( $_GET['cadv_line'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			'search'   => isset( $_GET['cadv_search'] ) ? sanitize_text_field( wp_unslash( $_GET['cadv_search'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			'has_ica'  => isset( $_GET['cadv_ica'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['cadv_ica'] ) ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			'category' => $this->resolve_line_filter_value( $line_value ),
+			'search'   => $this->get_url_search_value(),
+			'has_ica'  => $this->is_url_truthy( $ica_value ),
 			'page'     => 1,
 			'per_page' => $per_page,
 		);
+	}
+
+	/**
+	 * Get the marketplace search value from supported URL aliases.
+	 *
+	 * @return string
+	 */
+	private function get_url_search_value() {
+		return $this->get_first_url_value(
+			array(
+				'cadv_search',
+				'buscar',
+				'busqueda',
+				'search',
+				'q',
+			)
+		);
+	}
+
+	/**
+	 * Return the first supported URL value.
+	 *
+	 * @param array $keys Query string keys.
+	 * @return string
+	 */
+	private function get_first_url_value( array $keys ) {
+		foreach ( $keys as $key ) {
+			if ( ! isset( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				continue;
+			}
+
+			$value = wp_unslash( $_GET[ $key ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+			if ( is_array( $value ) ) {
+				$value = reset( $value );
+			}
+
+			$value = sanitize_text_field( (string) $value );
+
+			if ( '' !== $value ) {
+				return $value;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Resolve a URL line/category value to a parent product category ID.
+	 *
+	 * Accepts term ID, slug or visible category name.
+	 *
+	 * @param string $value URL value.
+	 * @return int
+	 */
+	private function resolve_line_filter_value( $value ) {
+		$value = trim( sanitize_text_field( (string) $value ) );
+
+		if ( '' === $value || ! taxonomy_exists( 'product_cat' ) ) {
+			return 0;
+		}
+
+		if ( is_numeric( $value ) ) {
+			$term = get_term( absint( $value ), 'product_cat' );
+
+			if ( $term && ! is_wp_error( $term ) ) {
+				$line = $this->normalize_line_term( $term );
+				return $line ? absint( $line->term_id ) : 0;
+			}
+		}
+
+		$term = get_term_by( 'slug', sanitize_title( $value ), 'product_cat' );
+
+		if ( ! $term ) {
+			$term = get_term_by( 'name', $value, 'product_cat' );
+		}
+
+		if ( ! $term ) {
+			$terms = get_terms(
+				array(
+					'taxonomy'   => 'product_cat',
+					'hide_empty' => false,
+				)
+			);
+
+			if ( ! is_wp_error( $terms ) ) {
+				foreach ( $terms as $candidate ) {
+					if ( sanitize_title( $candidate->name ) === sanitize_title( $value ) ) {
+						$term = $candidate;
+						break;
+					}
+				}
+			}
+		}
+
+		if ( ! $term || is_wp_error( $term ) ) {
+			return 0;
+		}
+
+		$line = $this->normalize_line_term( $term );
+
+		return $line ? absint( $line->term_id ) : 0;
+	}
+
+	/**
+	 * Parse truthy URL values.
+	 *
+	 * @param string $value URL value.
+	 * @return bool
+	 */
+	private function is_url_truthy( $value ) {
+		return in_array( strtolower( trim( (string) $value ) ), array( '1', 'yes', 'true', 'si', 'sí', 'on' ), true );
 	}
 
 	/**
