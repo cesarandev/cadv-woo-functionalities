@@ -24,6 +24,7 @@ final class CADV_Woo_Functionalities {
 	const ORDER_SOURCE            = 'cesarandev_technical_sheet_request';
 	const LEAD_POST_TYPE          = 'cesarandev_wf_lead';
 	const MARKETPLACE_TERM_COLOR_META = '_cadv_marketplace_color';
+	const PRODUCT_ICA_META        = '_cadv_marketplace_ica_registration';
 	const DEFAULT_LINE_COLOR      = '#2f7d3a';
 
 	/**
@@ -80,6 +81,8 @@ final class CADV_Woo_Functionalities {
 		add_action( 'admin_post_' . self::CRM_LEAD_UPDATE_ACTION, array( $this, 'handle_crm_lead_update' ) );
 		add_action( 'admin_post_' . self::DELETE_ACCOUNT_ACTION, array( $this, 'handle_account_deletion_request' ) );
 		add_shortcode( 'cadv_ficha_tecnica', array( $this, 'render_actions_shortcode' ) );
+		add_shortcode( 'cadv_registro_ica', array( $this, 'render_ica_shortcode' ) );
+		add_shortcode( 'cadv_categoria_producto', array( $this, 'render_product_category_shortcode' ) );
 		add_shortcode( 'cesarandev_ficha_tecnica', array( $this, 'render_actions_shortcode' ) );
 		add_shortcode( 'cesarandev_crm_cta', array( $this, 'render_crm_cta_shortcode' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( CADV_WOO_FUNCTIONALITIES_FILE ), array( $this, 'add_plugin_action_links' ) );
@@ -933,6 +936,91 @@ final class CADV_Woo_Functionalities {
 		$this->render_product_buttons( $product, false );
 		$this->render_product_modal( $product );
 		return ob_get_clean();
+	}
+
+	/**
+	 * Render product ICA registration via shortcode.
+	 *
+	 * Usage: [cadv_registro_ica]
+	 * Optional fallback: [cadv_registro_ica product_id="123"]
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_ica_shortcode( $atts = array() ) {
+		if ( ! $this->is_woocommerce_active() ) {
+			return '';
+		}
+
+		$atts = shortcode_atts(
+			array(
+				'product_id' => 0,
+			),
+			$atts,
+			'cadv_registro_ica'
+		);
+
+		$product = $this->resolve_shortcode_product( absint( $atts['product_id'] ) );
+
+		if ( ! $product instanceof WC_Product ) {
+			return '';
+		}
+
+		$ica = sanitize_text_field( $product->get_meta( self::PRODUCT_ICA_META ) );
+
+		if ( '' === trim( $ica ) ) {
+			return '';
+		}
+
+		$this->enqueue_frontend_assets();
+
+		return sprintf(
+			'<span class="cesarandev-wf-ica-registration"><span class="cesarandev-wf-ica-registration__dot" aria-hidden="true"></span><span>%s</span></span>',
+			esc_html( $this->format_ica_registration( $ica ) )
+		);
+	}
+
+	/**
+	 * Render product main category/line via shortcode.
+	 *
+	 * Usage: [cadv_categoria_producto]
+	 * Optional fallback: [cadv_categoria_producto product_id="123"]
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_product_category_shortcode( $atts = array() ) {
+		if ( ! $this->is_woocommerce_active() ) {
+			return '';
+		}
+
+		$atts = shortcode_atts(
+			array(
+				'product_id' => 0,
+			),
+			$atts,
+			'cadv_categoria_producto'
+		);
+
+		$product = $this->resolve_shortcode_product( absint( $atts['product_id'] ) );
+
+		if ( ! $product instanceof WC_Product ) {
+			return '';
+		}
+
+		$line = $this->get_product_line_term( $product );
+
+		if ( ! $line instanceof WP_Term ) {
+			return '';
+		}
+
+		$this->enqueue_frontend_assets();
+
+		return sprintf(
+			'<span class="cesarandev-wf-category-pill" style="--cesarandev-wf-accent:%1$s;">%2$s</span>',
+			esc_attr( $this->get_term_line_color( $line->term_id ) ),
+			esc_html( $line->name )
+		);
 	}
 
 	/**
@@ -3109,6 +3197,30 @@ final class CADV_Woo_Functionalities {
 	}
 
 	/**
+	 * Format ICA registration for frontend display.
+	 *
+	 * @param string $value Raw ICA registration.
+	 * @return string
+	 */
+	private function format_ica_registration( $value ) {
+		$value = trim( wp_strip_all_tags( (string) $value ) );
+
+		if ( '' === $value ) {
+			return '';
+		}
+
+		if ( preg_match( '/^reg\.?\s*ica\s*(.*)$/i', $value, $matches ) ) {
+			return trim( 'Reg ICA ' . ( isset( $matches[1] ) ? trim( $matches[1] ) : '' ) );
+		}
+
+		if ( preg_match( '/^ica\s*(.*)$/i', $value, $matches ) ) {
+			return trim( 'Reg ICA ' . ( isset( $matches[1] ) ? trim( $matches[1] ) : '' ) );
+		}
+
+		return 'Reg ICA ' . $value;
+	}
+
+	/**
 	 * Split full name into first and last name.
 	 *
 	 * @param string $full_name Full name.
@@ -3184,25 +3296,45 @@ final class CADV_Woo_Functionalities {
 	 * @return string
 	 */
 	private function get_product_line_color( WC_Product $product ) {
+		$line = $this->get_product_line_term( $product );
+
+		return $line instanceof WP_Term ? $this->get_term_line_color( $line->term_id ) : self::DEFAULT_LINE_COLOR;
+	}
+
+	/**
+	 * Get the top-level marketplace line/category for a product.
+	 *
+	 * @param WC_Product $product WooCommerce product.
+	 * @return WP_Term|null
+	 */
+	private function get_product_line_term( WC_Product $product ) {
 		$terms = get_the_terms( $product->get_id(), 'product_cat' );
 
 		if ( is_wp_error( $terms ) || empty( $terms ) ) {
-			return self::DEFAULT_LINE_COLOR;
+			return null;
 		}
 
 		foreach ( $terms as $term ) {
 			$line = $this->normalize_product_line_term( $term );
 
 			if ( $line instanceof WP_Term ) {
-				$color = sanitize_hex_color( get_term_meta( $line->term_id, self::MARKETPLACE_TERM_COLOR_META, true ) );
-
-				if ( $color ) {
-					return $color;
-				}
+				return $line;
 			}
 		}
 
-		return self::DEFAULT_LINE_COLOR;
+		return null;
+	}
+
+	/**
+	 * Get a configured marketplace line/category color.
+	 *
+	 * @param int $term_id Term ID.
+	 * @return string
+	 */
+	private function get_term_line_color( $term_id ) {
+		$color = sanitize_hex_color( get_term_meta( absint( $term_id ), self::MARKETPLACE_TERM_COLOR_META, true ) );
+
+		return $color ? $color : self::DEFAULT_LINE_COLOR;
 	}
 
 	/**

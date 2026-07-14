@@ -68,6 +68,20 @@ Alias heredado compatible:
 
 Si el producto no tiene archivos descargables configurados en WooCommerce, el boton de ficha se muestra deshabilitado con el texto `Sin ficha existente`.
 
+Para mostrar el Registro ICA del producto:
+
+```text
+[cadv_registro_ica]
+```
+
+Para mostrar la categoria/linea principal del producto:
+
+```text
+[cadv_categoria_producto]
+```
+
+Ambos detectan automaticamente el producto actual y tambien aceptan `product_id="123"`. Si el dato no existe, no imprimen nada.
+
 ## Shortcode para CTAs al CRM
 
 Usa este shortcode para un formulario de cotizacion general:

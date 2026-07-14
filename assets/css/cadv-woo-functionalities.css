@@ -97,6 +97,37 @@
 	transform: none;
 }
 
+.cesarandev-wf-ica-registration {
+	align-items: center;
+	color: #4b5f7a;
+	display: inline-flex;
+	font-family: "Poppins", Arial, sans-serif;
+	font-size: 14px;
+	font-weight: 400;
+	gap: 6px;
+	line-height: 1.25;
+}
+
+.cesarandev-wf-ica-registration__dot {
+	border: 1px solid var(--cesarandev-wf-accent, #2f7d3a);
+	border-radius: 999px;
+	display: inline-block;
+	height: 9px;
+	width: 9px;
+}
+
+.cesarandev-wf-category-pill {
+	background: #e5f4e7;
+	border-radius: 999px;
+	color: var(--cesarandev-wf-accent, #2f7d3a);
+	display: inline-flex;
+	font-family: "Exo", Arial, sans-serif;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.2;
+	padding: 10px 18px;
+}
+
 .cesarandev-wf-modal[hidden] {
 	display: none;
 }
