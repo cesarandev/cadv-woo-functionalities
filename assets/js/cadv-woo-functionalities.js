@@ -166,7 +166,38 @@
 		var forms = document.querySelectorAll('[data-cesarandev-wf-cta-form]');
 
 		Array.prototype.forEach.call(forms, function (form) {
+			var serviceSelect = form.querySelector('[data-cesarandev-wf-service-select]');
+			var demoDateField = form.querySelector('[data-cesarandev-wf-demo-date-field]');
+			var demoDateInput = form.querySelector('[data-cesarandev-wf-demo-date]');
 			var message = form.querySelector('[data-cesarandev-wf-cta-message]');
+
+			function getSelectedServiceKey() {
+				var option;
+
+				if (!serviceSelect || serviceSelect.selectedIndex < 0) {
+					return '';
+				}
+
+				option = serviceSelect.options[serviceSelect.selectedIndex];
+				return option ? String(option.getAttribute('data-service-key') || '') : '';
+			}
+
+			function syncDemoDateField() {
+				var isAgropilot = getSelectedServiceKey() === 'agropilot';
+
+				if (!demoDateField || !demoDateInput) {
+					return;
+				}
+
+				demoDateField.hidden = !isAgropilot;
+				demoDateInput.disabled = !isAgropilot;
+				demoDateInput.required = isAgropilot;
+			}
+
+			if (serviceSelect) {
+				serviceSelect.addEventListener('change', syncDemoDateField);
+				syncDemoDateField();
+			}
 
 			form.addEventListener('submit', function (event) {
 				event.preventDefault();
@@ -175,10 +206,15 @@
 				var email = String(formData.get('email') || '').trim();
 				var type = String(formData.get('cta_type') || '').trim();
 				var requiredFields = type === 'newsletter' ? ['full_name', 'email'] : ['full_name', 'company', 'position', 'phone', 'email'];
+				var selectedServiceKey = getSelectedServiceKey();
 				var i;
 
 				if (type === 'services') {
 					requiredFields.push('product_interest');
+
+					if (selectedServiceKey === 'agropilot') {
+						requiredFields.push('demo_date');
+					}
 				}
 
 				for (i = 0; i < requiredFields.length; i += 1) {
@@ -186,6 +222,11 @@
 						setMessage(message, getMessage('required', 'Completa todos los campos obligatorios.'), 'error');
 						return;
 					}
+				}
+
+				if (selectedServiceKey === 'agropilot' && demoDateInput && (demoDateInput.value < demoDateInput.min || demoDateInput.value > demoDateInput.max)) {
+					setMessage(message, getMessage('demoDate', 'Selecciona una fecha de demostracion entre hoy y un mes a partir de hoy.'), 'error');
+					return;
 				}
 
 				if (!isValidEmail(email)) {
@@ -212,6 +253,7 @@
 						}
 
 						form.reset();
+						syncDemoDateField();
 						setMessage(message, data.message, 'success');
 					})
 					.catch(function (error) {

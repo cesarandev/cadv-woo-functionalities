@@ -479,6 +479,7 @@ final class CADV_Woo_Functionalities {
 				</select>
 			</label>
 			<label><?php esc_html_e( 'Producto o servicio de interes', 'cadv-woo-functionalities' ); ?><input type="text" name="product" value="<?php echo esc_attr( $filters['product'] ); ?>" /></label>
+			<label><?php esc_html_e( 'Fecha demostracion AgroPilot', 'cadv-woo-functionalities' ); ?><input type="date" name="demo_date" value="<?php echo esc_attr( $filters['demo_date'] ); ?>" /></label>
 			<label><?php esc_html_e( 'Tipo de cultivo', 'cadv-woo-functionalities' ); ?><input type="text" name="crop_type" value="<?php echo esc_attr( $filters['crop_type'] ); ?>" /></label>
 			<label><?php esc_html_e( 'Fuente', 'cadv-woo-functionalities' ); ?><input type="text" name="source" value="<?php echo esc_attr( $filters['source'] ); ?>" /></label>
 			<label><?php esc_html_e( 'Convertido', 'cadv-woo-functionalities' ); ?>
@@ -533,7 +534,13 @@ final class CADV_Woo_Functionalities {
 							</td>
 							<td><?php echo esc_html( $lead['email'] ); ?><br /><span class="cesarandev-wf-muted"><?php echo esc_html( $lead['phone'] ); ?></span></td>
 							<td><?php echo esc_html( $lead['company'] ); ?><br /><span class="cesarandev-wf-muted"><?php echo esc_html( $lead['position'] ); ?></span></td>
-							<td><?php echo esc_html( $lead['product_interest'] ); ?><br /><span class="cesarandev-wf-muted"><?php echo esc_html( $lead['crop_type'] ); ?></span></td>
+							<td>
+								<?php echo esc_html( $lead['product_interest'] ); ?>
+								<?php if ( $lead['demo_date_formatted'] ) : ?>
+									<br /><strong><?php echo esc_html( sprintf( __( 'Demostracion: %s', 'cadv-woo-functionalities' ), $lead['demo_date_formatted'] ) ); ?></strong>
+								<?php endif; ?>
+								<br /><span class="cesarandev-wf-muted"><?php echo esc_html( $lead['crop_type'] ); ?></span>
+							</td>
 							<td>
 								<?php echo esc_html( $lead['cta_types_label'] ); ?>
 								<?php if ( $lead['source_url'] ) : ?>
@@ -897,6 +904,7 @@ final class CADV_Woo_Functionalities {
 					'loading'  => __( 'Enviando solicitud...', 'cadv-woo-functionalities' ),
 					'error'    => __( 'No se pudo registrar la solicitud. Intentalo de nuevo.', 'cadv-woo-functionalities' ),
 					'privacy'  => __( 'Debes aceptar la politica de privacidad.', 'cadv-woo-functionalities' ),
+					'demoDate' => __( 'Selecciona una fecha de demostracion entre hoy y un mes a partir de hoy.', 'cadv-woo-functionalities' ),
 				),
 			)
 		);
@@ -1122,6 +1130,7 @@ final class CADV_Woo_Functionalities {
 		$privacy_url      = $atts['privacy_url'] ? esc_url_raw( $atts['privacy_url'] ) : get_privacy_policy_url();
 		$interest_options = $is_services ? $this->get_service_interest_options() : $this->get_product_interest_options();
 		$selected_service = $is_services ? $this->get_service_interest_option( $atts['service'] ) : array();
+		$demo_date_limits = $this->get_agropilot_demo_date_limits();
 
 		ob_start();
 		?>
@@ -1168,12 +1177,19 @@ final class CADV_Woo_Functionalities {
 				<?php if ( ! $is_newsletter ) : ?>
 					<label class="cesarandev-wf-cta__field">
 						<span><?php echo esc_html( $is_services ? __( 'Servicio de interes *', 'cadv-woo-functionalities' ) : __( 'Producto de interes', 'cadv-woo-functionalities' ) ); ?></span>
-						<select name="product_interest"<?php if ( $is_services ) : ?> required="required"<?php endif; ?>>
+						<select name="product_interest"<?php if ( $is_services ) : ?> data-cesarandev-wf-service-select required="required"<?php endif; ?>>
 							<option value=""><?php echo esc_html( $is_services ? __( 'Seleccione un servicio', 'cadv-woo-functionalities' ) : __( 'Seleccione una familia', 'cadv-woo-functionalities' ) ); ?></option>
 							<?php foreach ( $interest_options as $interest_option ) : ?>
-								<option value="<?php echo esc_attr( $interest_option['value'] ); ?>"<?php if ( ! empty( $selected_service ) && $selected_service['key'] === $interest_option['key'] ) : ?> selected="selected"<?php endif; ?>><?php echo esc_html( $interest_option['label'] ); ?></option>
+								<option value="<?php echo esc_attr( $interest_option['value'] ); ?>"<?php if ( $is_services ) : ?> data-service-key="<?php echo esc_attr( $interest_option['key'] ); ?>"<?php endif; ?><?php if ( ! empty( $selected_service ) && $selected_service['key'] === $interest_option['key'] ) : ?> selected="selected"<?php endif; ?>><?php echo esc_html( $interest_option['label'] ); ?></option>
 							<?php endforeach; ?>
 						</select>
+					</label>
+				<?php endif; ?>
+
+				<?php if ( $is_services ) : ?>
+					<label class="cesarandev-wf-cta__field" data-cesarandev-wf-demo-date-field<?php if ( empty( $selected_service ) || 'agropilot' !== $selected_service['key'] ) : ?> hidden<?php endif; ?>>
+						<span><?php esc_html_e( 'Fecha preferida para la demostracion *', 'cadv-woo-functionalities' ); ?></span>
+						<input type="date" name="demo_date" min="<?php echo esc_attr( $demo_date_limits['min'] ); ?>" max="<?php echo esc_attr( $demo_date_limits['max'] ); ?>" data-cesarandev-wf-demo-date<?php if ( empty( $selected_service ) || 'agropilot' !== $selected_service['key'] ) : ?> disabled<?php else : ?> required="required"<?php endif; ?> />
 					</label>
 				<?php endif; ?>
 
@@ -1451,6 +1467,41 @@ final class CADV_Woo_Functionalities {
 		}
 
 		return array();
+	}
+
+	/**
+	 * Get the inclusive booking window for an AgroPilot demonstration.
+	 *
+	 * @return array
+	 */
+	private function get_agropilot_demo_date_limits() {
+		$today      = new DateTimeImmutable( 'today', wp_timezone() );
+		$next_month = $today->modify( 'first day of next month' );
+		$max_day    = min( (int) $today->format( 'd' ), (int) $next_month->format( 't' ) );
+		$maximum    = $next_month->setDate( (int) $next_month->format( 'Y' ), (int) $next_month->format( 'm' ), $max_day );
+
+		return array(
+			'min' => $today->format( 'Y-m-d' ),
+			'max' => $maximum->format( 'Y-m-d' ),
+		);
+	}
+
+	/**
+	 * Check an AgroPilot demonstration date against the booking window.
+	 *
+	 * @param string $date Date in Y-m-d format.
+	 * @return bool
+	 */
+	private function is_valid_agropilot_demo_date( $date ) {
+		$parsed = DateTimeImmutable::createFromFormat( '!Y-m-d', (string) $date, wp_timezone() );
+
+		if ( ! $parsed || $parsed->format( 'Y-m-d' ) !== $date ) {
+			return false;
+		}
+
+		$limits = $this->get_agropilot_demo_date_limits();
+
+		return $date >= $limits['min'] && $date <= $limits['max'];
 	}
 
 	/**
@@ -1814,6 +1865,10 @@ final class CADV_Woo_Functionalities {
 			'newsletter' => __( 'Registro recibido. Gracias por suscribirte.', 'cadv-woo-functionalities' ),
 		);
 
+		if ( 'services' === $data['cta_type'] && ! empty( $data['demo_date'] ) ) {
+			$success_messages['services'] = __( 'Solicitud de demostracion recibida. Nuestro equipo confirmara la disponibilidad para la fecha seleccionada.', 'cadv-woo-functionalities' );
+		}
+
 		wp_send_json_success( array( 'message' => $success_messages[ $data['cta_type'] ] ) );
 	}
 
@@ -1823,7 +1878,7 @@ final class CADV_Woo_Functionalities {
 	 * @return array
 	 */
 	private function get_cta_request_data() {
-		return array(
+		$data = array(
 			'cta_type'           => isset( $_POST['cta_type'] ) ? $this->normalize_cta_type( wp_unslash( $_POST['cta_type'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'full_name'          => isset( $_POST['full_name'] ) ? sanitize_text_field( wp_unslash( $_POST['full_name'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'company'            => isset( $_POST['company'] ) ? sanitize_text_field( wp_unslash( $_POST['company'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -1831,10 +1886,19 @@ final class CADV_Woo_Functionalities {
 			'phone'              => isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'email'              => isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'product_interest'   => isset( $_POST['product_interest'] ) ? sanitize_text_field( wp_unslash( $_POST['product_interest'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'demo_date'          => isset( $_POST['demo_date'] ) ? sanitize_text_field( wp_unslash( $_POST['demo_date'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'crop_type'          => isset( $_POST['crop_type'] ) ? sanitize_text_field( wp_unslash( $_POST['crop_type'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'source_url'         => isset( $_POST['source_url'] ) ? esc_url_raw( wp_unslash( $_POST['source_url'] ) ) : $this->get_current_url(), // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'privacy_acceptance' => ! empty( $_POST['privacy_acceptance'] ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		);
+
+		$service = 'services' === $data['cta_type'] ? $this->get_service_interest_option( $data['product_interest'] ) : array();
+
+		if ( empty( $service ) || 'agropilot' !== $service['key'] ) {
+			$data['demo_date'] = '';
+		}
+
+		return $data;
 	}
 
 	/**
@@ -1863,10 +1927,14 @@ final class CADV_Woo_Functionalities {
 		}
 
 		if ( 'services' === $data['cta_type'] ) {
-			$allowed_services = wp_list_pluck( $this->get_service_interest_options(), 'value' );
+			$service = $this->get_service_interest_option( $data['product_interest'] );
 
-			if ( empty( $data['product_interest'] ) || ! in_array( $data['product_interest'], $allowed_services, true ) ) {
+			if ( empty( $service ) ) {
 				return new WP_Error( 'cesarandev_wf_cta_missing_service', __( 'Selecciona un servicio valido.', 'cadv-woo-functionalities' ) );
+			}
+
+			if ( 'agropilot' === $service['key'] && ! $this->is_valid_agropilot_demo_date( $data['demo_date'] ) ) {
+				return new WP_Error( 'cesarandev_wf_cta_invalid_demo_date', __( 'Selecciona una fecha de demostracion entre hoy y un mes a partir de hoy.', 'cadv-woo-functionalities' ) );
 			}
 		}
 
@@ -1918,6 +1986,7 @@ final class CADV_Woo_Functionalities {
 			'date'             => current_time( 'mysql' ),
 			'source_url'       => $data['source_url'],
 			'product_interest' => $data['product_interest'],
+			'demo_date'        => $data['demo_date'],
 			'crop_type'        => $data['crop_type'],
 		);
 
@@ -1928,6 +1997,7 @@ final class CADV_Woo_Functionalities {
 			'_cesarandev_wf_phone'            => $data['phone'],
 			'_cesarandev_wf_email'            => $data['email'],
 			'_cesarandev_wf_product_interest' => $data['product_interest'],
+			'_cesarandev_wf_demo_date'        => $data['demo_date'],
 			'_cesarandev_wf_crop_type'        => $data['crop_type'],
 			'_cesarandev_wf_source_url'       => $data['source_url'],
 			'_cesarandev_wf_last_cta_type'    => $data['cta_type'],
@@ -2387,6 +2457,7 @@ final class CADV_Woo_Functionalities {
 				'Empresa',
 				'Cargo',
 				'Producto / servicio',
+				'Fecha demostracion AgroPilot',
 				'Archivo descargable',
 				'Tipo de cultivo',
 				'Tipo CTA',
@@ -2417,6 +2488,7 @@ final class CADV_Woo_Functionalities {
 					$row['company'],
 					$row['position'],
 					$row['product_name'],
+					'',
 					$row['download_name'],
 					'',
 					'',
@@ -2448,6 +2520,7 @@ final class CADV_Woo_Functionalities {
 					$lead['company'],
 					$lead['position'],
 					$lead['product_interest'],
+					$lead['demo_date'],
 					'',
 					$lead['crop_type'],
 					$lead['cta_types_label'],
@@ -2696,6 +2769,22 @@ final class CADV_Woo_Functionalities {
 	}
 
 	/**
+	 * Format a stored demonstration date using the WordPress date setting.
+	 *
+	 * @param string $date Date in Y-m-d format.
+	 * @return string
+	 */
+	private function format_demo_date( $date ) {
+		$parsed = DateTimeImmutable::createFromFormat( '!Y-m-d', (string) $date, wp_timezone() );
+
+		if ( ! $parsed || $parsed->format( 'Y-m-d' ) !== $date ) {
+			return '';
+		}
+
+		return wp_date( get_option( 'date_format' ), $parsed->getTimestamp(), wp_timezone() );
+	}
+
+	/**
 	 * Get allowed CRM statuses.
 	 *
 	 * @return array
@@ -2745,6 +2834,7 @@ final class CADV_Woo_Functionalities {
 			'delete_status'   => '',
 			'cta_type'        => '',
 			'crop_type'       => '',
+			'demo_date'       => '',
 			'source'          => '',
 			'converted'       => '',
 			'export_scope'    => '',
@@ -2919,6 +3009,8 @@ final class CADV_Woo_Functionalities {
 				'company'                   => (string) get_post_meta( $lead_id, '_cesarandev_wf_company', true ),
 				'position'                  => (string) get_post_meta( $lead_id, '_cesarandev_wf_position', true ),
 				'product_interest'          => (string) get_post_meta( $lead_id, '_cesarandev_wf_product_interest', true ),
+				'demo_date'                 => (string) get_post_meta( $lead_id, '_cesarandev_wf_demo_date', true ),
+				'demo_date_formatted'       => $this->format_demo_date( (string) get_post_meta( $lead_id, '_cesarandev_wf_demo_date', true ) ),
 				'crop_type'                 => (string) get_post_meta( $lead_id, '_cesarandev_wf_crop_type', true ),
 				'source_url'                => (string) get_post_meta( $lead_id, '_cesarandev_wf_source_url', true ),
 				'last_cta_type'             => (string) get_post_meta( $lead_id, '_cesarandev_wf_last_cta_type', true ),
@@ -2949,6 +3041,7 @@ final class CADV_Woo_Functionalities {
 				's'          => '',
 				'product'    => '',
 				'crop_type'  => '',
+				'demo_date'  => '',
 				'source'     => '',
 				'crm_status' => '',
 				'cta_type'   => '',
@@ -2965,7 +3058,7 @@ final class CADV_Woo_Functionalities {
 			array_filter(
 				$rows,
 				function ( $row ) use ( $filters, $date_from, $date_to ) {
-					$haystack = strtolower( implode( ' ', array( $row['full_name'], $row['email'], $row['phone'], $row['company'], $row['position'], $row['product_interest'], $row['crop_type'] ) ) );
+					$haystack = strtolower( implode( ' ', array( $row['full_name'], $row['email'], $row['phone'], $row['company'], $row['position'], $row['product_interest'], $row['demo_date'], $row['crop_type'] ) ) );
 
 					if ( $filters['s'] && false === strpos( $haystack, strtolower( $filters['s'] ) ) ) {
 						return false;
@@ -2976,6 +3069,10 @@ final class CADV_Woo_Functionalities {
 					}
 
 					if ( $filters['crop_type'] && false === stripos( $row['crop_type'], $filters['crop_type'] ) ) {
+						return false;
+					}
+
+					if ( $filters['demo_date'] && $row['demo_date'] !== $filters['demo_date'] ) {
 						return false;
 					}
 

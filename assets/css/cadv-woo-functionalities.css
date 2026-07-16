@@ -498,6 +498,10 @@ body.cesarandev-wf-modal-open {
 	margin: 0;
 }
 
+.cesarandev-wf-cta__field[hidden] {
+	display: none !important;
+}
+
 .cesarandev-wf-cta__field span {
 	color: #374151;
 	font-size: 12px;

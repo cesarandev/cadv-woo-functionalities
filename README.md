@@ -137,6 +137,8 @@ Puedes dejar un servicio seleccionado por defecto en cada boton:
 
 Cada valor genera su propio modal, por lo que puedes usar varios botones con servicios diferentes en la misma pagina.
 
+Cuando el servicio seleccionado es `agropilot`, el formulario muestra un calendario obligatorio para agendar una demostracion. Solo acepta fechas desde el dia actual hasta un mes calendario por adelantado. La fecha queda guardada en el CRM, puede filtrarse y se incluye en la exportacion CSV.
+
 El shortcode devuelve un enlace interno y agrega automaticamente el formulario en un modal. Para newsletter puedes cambiar `type="quote"` por `type="newsletter"`. El shortcode sin `mode="url"` sigue siendo un formulario completo y debe colocarse en el widget **Shortcode**, no directamente en el campo Enlace.
 
 Si la version de Elementor no ofrece la etiqueta dinamica **Shortcode**, agrega un widget **Shortcode** en cualquier parte de la pagina con:
