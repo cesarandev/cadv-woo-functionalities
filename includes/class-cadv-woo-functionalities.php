@@ -1065,6 +1065,7 @@ final class CADV_Woo_Functionalities {
 			array(
 				'type'        => 'quote',
 				'mode'        => 'form',
+				'service'     => '',
 				'title'       => '',
 				'eyebrow'     => '',
 				'description' => '',
@@ -1085,9 +1086,9 @@ final class CADV_Woo_Functionalities {
 		$mode = sanitize_key( $atts['mode'] );
 
 		if ( in_array( $mode, array( 'url', 'link' ), true ) ) {
-			$this->queue_crm_cta_modal( $type, $atts );
+			$modal_id = $this->queue_crm_cta_modal( $type, $atts );
 
-			return '#' . $this->get_crm_cta_modal_id( $type );
+			return '#' . $modal_id;
 		}
 
 		if ( 'modal' === $mode ) {
@@ -1120,6 +1121,7 @@ final class CADV_Woo_Functionalities {
 		$description      = $atts['description'] ? $atts['description'] : $defaults[ $type ]['description'];
 		$privacy_url      = $atts['privacy_url'] ? esc_url_raw( $atts['privacy_url'] ) : get_privacy_policy_url();
 		$interest_options = $is_services ? $this->get_service_interest_options() : $this->get_product_interest_options();
+		$selected_service = $is_services ? $this->get_service_interest_option( $atts['service'] ) : array();
 
 		ob_start();
 		?>
@@ -1169,7 +1171,7 @@ final class CADV_Woo_Functionalities {
 						<select name="product_interest"<?php if ( $is_services ) : ?> required="required"<?php endif; ?>>
 							<option value=""><?php echo esc_html( $is_services ? __( 'Seleccione un servicio', 'cadv-woo-functionalities' ) : __( 'Seleccione una familia', 'cadv-woo-functionalities' ) ); ?></option>
 							<?php foreach ( $interest_options as $interest_option ) : ?>
-								<option value="<?php echo esc_attr( $interest_option['value'] ); ?>"><?php echo esc_html( $interest_option['label'] ); ?></option>
+								<option value="<?php echo esc_attr( $interest_option['value'] ); ?>"<?php if ( ! empty( $selected_service ) && $selected_service['key'] === $interest_option['key'] ) : ?> selected="selected"<?php endif; ?>><?php echo esc_html( $interest_option['label'] ); ?></option>
 							<?php endforeach; ?>
 						</select>
 					</label>
@@ -1254,22 +1256,31 @@ final class CADV_Woo_Functionalities {
 	 *
 	 * @param string $type Normalized CTA type.
 	 * @param array  $atts Shortcode attributes.
+	 * @return string Modal ID.
 	 */
 	private function queue_crm_cta_modal( $type, array $atts ) {
-		if ( ! isset( $this->queued_cta_modals[ $type ] ) ) {
-			$atts['mode']                     = 'form';
-			$this->queued_cta_modals[ $type ] = $atts;
+		$modal_id = $this->get_crm_cta_modal_id( $type, $atts );
+
+		if ( ! isset( $this->queued_cta_modals[ $modal_id ] ) ) {
+			$atts['mode'] = 'form';
+			$this->queued_cta_modals[ $modal_id ] = array(
+				'type' => $type,
+				'atts' => $atts,
+			);
 		}
 
 		add_action( 'wp_footer', array( $this, 'render_queued_crm_cta_modals' ), 5 );
+
+		return $modal_id;
 	}
 
 	/**
 	 * Render CTA modals requested by URL-mode shortcodes.
 	 */
 	public function render_queued_crm_cta_modals() {
-		foreach ( $this->queued_cta_modals as $type => $atts ) {
-			$modal_id   = $this->get_crm_cta_modal_id( $type );
+		foreach ( $this->queued_cta_modals as $modal_id => $modal ) {
+			$type       = $modal['type'];
+			$atts       = $modal['atts'];
 			$aria_label = 'newsletter' === $type ? __( 'Formulario de newsletter', 'cadv-woo-functionalities' ) : ( 'services' === $type ? __( 'Formulario de servicios', 'cadv-woo-functionalities' ) : __( 'Formulario de cotizacion', 'cadv-woo-functionalities' ) );
 			?>
 			<div id="<?php echo esc_attr( $modal_id ); ?>" class="cesarandev-wf-modal cesarandev-wf-cta-modal" data-cesarandev-wf-cta-modal hidden>
@@ -1287,10 +1298,21 @@ final class CADV_Woo_Functionalities {
 	 * Get the stable fragment ID used by an Elementor button and its CTA modal.
 	 *
 	 * @param string $type Normalized CTA type.
+	 * @param array  $atts Shortcode attributes.
 	 * @return string
 	 */
-	private function get_crm_cta_modal_id( $type ) {
-		return 'cesarandev-crm-cta-' . sanitize_html_class( $type );
+	private function get_crm_cta_modal_id( $type, array $atts = array() ) {
+		$modal_id = 'cesarandev-crm-cta-' . sanitize_html_class( $type );
+
+		if ( 'services' === $type && ! empty( $atts['service'] ) ) {
+			$service = $this->get_service_interest_option( $atts['service'] );
+
+			if ( ! empty( $service ) ) {
+				$modal_id .= '-' . $service['key'];
+			}
+		}
+
+		return $modal_id;
 	}
 
 	/**
@@ -1371,22 +1393,64 @@ final class CADV_Woo_Functionalities {
 	 * @return array
 	 */
 	private function get_service_interest_options() {
-		$services = array(
-			'AgroPilot — Servicio de dron agrícola',
-			'Análisis de suelo y foliar',
-			'Asesoría agronómica en campo',
-			'Plan de fertilización personalizado',
+		return array(
+			array(
+				'key'   => 'agropilot',
+				'value' => 'AgroPilot — Servicio de dron agrícola',
+				'label' => 'AgroPilot — Servicio de dron agrícola',
+			),
+			array(
+				'key'   => 'analisis',
+				'value' => 'Análisis de suelo y foliar',
+				'label' => 'Análisis de suelo y foliar',
+			),
+			array(
+				'key'   => 'asesoria',
+				'value' => 'Asesoría agronómica en campo',
+				'label' => 'Asesoría agronómica en campo',
+			),
+			array(
+				'key'   => 'fertilizacion',
+				'value' => 'Plan de fertilización personalizado',
+				'label' => 'Plan de fertilización personalizado',
+			),
 		);
+	}
 
-		return array_map(
-			function ( $service ) {
-				return array(
-					'value' => $service,
-					'label' => $service,
-				);
-			},
-			$services
+	/**
+	 * Resolve a service shortcode value to its canonical option.
+	 *
+	 * @param string $service Raw service key or label.
+	 * @return array
+	 */
+	private function get_service_interest_option( $service ) {
+		$service = sanitize_text_field( $service );
+
+		if ( '' === $service ) {
+			return array();
+		}
+
+		$aliases = array(
+			'agropilot'           => 'agropilot',
+			'dron'                => 'agropilot',
+			'analisis'            => 'analisis',
+			'analisis_suelo'      => 'analisis',
+			'suelo'               => 'analisis',
+			'asesoria'            => 'asesoria',
+			'asesoria_agronomica' => 'asesoria',
+			'fertilizacion'       => 'fertilizacion',
+			'plan_fertilizacion'  => 'fertilizacion',
 		);
+		$key     = sanitize_key( $service );
+		$key     = isset( $aliases[ $key ] ) ? $aliases[ $key ] : $key;
+
+		foreach ( $this->get_service_interest_options() as $option ) {
+			if ( $key === $option['key'] || $service === $option['value'] ) {
+				return $option;
+			}
+		}
+
+		return array();
 	}
 
 	/**

@@ -126,6 +126,17 @@ Para un boton de servicios usa:
 [cesarandev_crm_cta type="services" mode="url"]
 ```
 
+Puedes dejar un servicio seleccionado por defecto en cada boton:
+
+```text
+[cesarandev_crm_cta type="services" mode="url" service="agropilot"]
+[cesarandev_crm_cta type="services" mode="url" service="analisis"]
+[cesarandev_crm_cta type="services" mode="url" service="asesoria"]
+[cesarandev_crm_cta type="services" mode="url" service="fertilizacion"]
+```
+
+Cada valor genera su propio modal, por lo que puedes usar varios botones con servicios diferentes en la misma pagina.
+
 El shortcode devuelve un enlace interno y agrega automaticamente el formulario en un modal. Para newsletter puedes cambiar `type="quote"` por `type="newsletter"`. El shortcode sin `mode="url"` sigue siendo un formulario completo y debe colocarse en el widget **Shortcode**, no directamente en el campo Enlace.
 
 Si la version de Elementor no ofrece la etiqueta dinamica **Shortcode**, agrega un widget **Shortcode** en cualquier parte de la pagina con:
