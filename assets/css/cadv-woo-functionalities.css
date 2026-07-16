@@ -673,6 +673,7 @@ body.cesarandev-wf-modal-open {
 
 	.cesarandev-wf-cta__field input,
 	.cesarandev-wf-cta__field select {
+		font-size: 16px;
 		min-width: 0;
 	}
 }
@@ -711,10 +712,13 @@ body.cesarandev-wf-modal-open {
 		font-size: 11px;
 	}
 
-	.cesarandev-wf-form input,
+	.cesarandev-wf-form input {
+		font-size: 13px;
+	}
+
 	.cesarandev-wf-cta__field input,
 	.cesarandev-wf-cta__field select {
-		font-size: 13px;
+		font-size: 16px;
 	}
 
 	.cesarandev-wf-form__privacy,

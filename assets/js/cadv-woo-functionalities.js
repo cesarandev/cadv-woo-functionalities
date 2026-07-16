@@ -244,7 +244,9 @@
 		}
 
 		function openModal(modal) {
+			var closeButton;
 			var firstInput;
+			var isMobile;
 
 			if (!modal) {
 				return;
@@ -255,8 +257,13 @@
 			modal.hidden = false;
 			document.body.classList.add('cesarandev-wf-modal-open');
 
+			isMobile = window.matchMedia && window.matchMedia('(max-width: 767px), (pointer: coarse)').matches;
+			closeButton = modal.querySelector('[data-cesarandev-wf-close-cta-modal].cesarandev-wf-modal__close');
 			firstInput = modal.querySelector('input:not([type="hidden"])');
-			if (firstInput) {
+
+			if (isMobile && closeButton) {
+				closeButton.focus({ preventScroll: true });
+			} else if (firstInput) {
 				firstInput.focus();
 			}
 		}
