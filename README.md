@@ -96,7 +96,15 @@ Usa este shortcode para newsletter:
 [cesarandev_crm_cta type="newsletter"]
 ```
 
-Ambos guardan o actualizan un lead por correo en `WooCommerce > CRM Fichas Tecnicas > Leads / CTAs` sin crear usuario WordPress ni pedido WooCommerce. El producto de interes del formulario de cotizacion se carga desde las categorias de producto de WooCommerce.
+Usa este shortcode para solicitar servicios:
+
+```text
+[cesarandev_crm_cta type="services"]
+```
+
+El formulario permite elegir entre AgroPilot (dron agricola), analisis de suelo y foliar, asesoria agronomica en campo y plan de fertilizacion personalizado.
+
+Los formularios guardan o actualizan un lead por correo en `WooCommerce > CRM Fichas Tecnicas > Leads / CTAs` sin crear usuario WordPress ni pedido WooCommerce. El producto de interes del formulario de cotizacion se carga desde las categorias de producto de WooCommerce y el formulario de servicios registra el servicio seleccionado.
 
 Puedes personalizar textos:
 
@@ -112,6 +120,12 @@ En el campo **Enlace** del boton, selecciona la etiqueta dinamica **Shortcode** 
 [cesarandev_crm_cta type="quote" mode="url"]
 ```
 
+Para un boton de servicios usa:
+
+```text
+[cesarandev_crm_cta type="services" mode="url"]
+```
+
 El shortcode devuelve un enlace interno y agrega automaticamente el formulario en un modal. Para newsletter puedes cambiar `type="quote"` por `type="newsletter"`. El shortcode sin `mode="url"` sigue siendo un formulario completo y debe colocarse en el widget **Shortcode**, no directamente en el campo Enlace.
 
 Si la version de Elementor no ofrece la etiqueta dinamica **Shortcode**, agrega un widget **Shortcode** en cualquier parte de la pagina con:
@@ -121,6 +135,24 @@ Si la version de Elementor no ofrece la etiqueta dinamica **Shortcode**, agrega 
 ```
 
 Luego usa `#cesarandev-crm-cta-quote` como enlace normal del boton. El widget no ocupa espacio: solo registra el formulario modal.
+
+Para servicios usa `type="services" mode="modal"` y enlaza el boton a `#cesarandev-crm-cta-services`.
+
+## Shortcode de WhatsApp
+
+El shortcode usa el numero guardado en `WooCommerce > CADV Woo Functionalities` y permite personalizar el mensaje y el texto del boton:
+
+```text
+[cesarandev_whatsapp message="Hola, me interesan los servicios de AgroBrokers." text="Hablar por WhatsApp"]
+```
+
+Para usarlo como URL dinamica en el campo **Enlace** de un boton de Elementor:
+
+```text
+[cesarandev_whatsapp mode="url" message="Hola, me interesa el servicio AgroPilot."]
+```
+
+El mensaje acepta las variables `{page_title}`, `{page_url}`, `{product_name}` y `{product_url}`. Tambien puedes pasar `product_id="123"` cuando necesites tomar los datos de un producto especifico.
 
 ## Shortcode de marketplace
 

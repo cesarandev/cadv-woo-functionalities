@@ -92,6 +92,7 @@ final class CADV_Woo_Functionalities {
 		add_shortcode( 'cadv_categoria_producto', array( $this, 'render_product_category_shortcode' ) );
 		add_shortcode( 'cesarandev_ficha_tecnica', array( $this, 'render_actions_shortcode' ) );
 		add_shortcode( 'cesarandev_crm_cta', array( $this, 'render_crm_cta_shortcode' ) );
+		add_shortcode( 'cesarandev_whatsapp', array( $this, 'render_whatsapp_shortcode' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( CADV_WOO_FUNCTIONALITIES_FILE ), array( $this, 'add_plugin_action_links' ) );
 		add_action( 'admin_notices', array( $this, 'render_woocommerce_notice' ) );
 		add_filter( 'woocommerce_account_menu_items', array( $this, 'filter_restricted_account_menu' ), 20 );
@@ -465,6 +466,7 @@ final class CADV_Woo_Functionalities {
 				<select name="cta_type">
 					<option value=""><?php esc_html_e( 'Todos', 'cadv-woo-functionalities' ); ?></option>
 					<option value="quote" <?php selected( $filters['cta_type'], 'quote' ); ?>><?php esc_html_e( 'Cotizacion', 'cadv-woo-functionalities' ); ?></option>
+					<option value="services" <?php selected( $filters['cta_type'], 'services' ); ?>><?php esc_html_e( 'Servicios', 'cadv-woo-functionalities' ); ?></option>
 					<option value="newsletter" <?php selected( $filters['cta_type'], 'newsletter' ); ?>><?php esc_html_e( 'Newsletter', 'cadv-woo-functionalities' ); ?></option>
 				</select>
 			</label>
@@ -476,7 +478,7 @@ final class CADV_Woo_Functionalities {
 					<?php endforeach; ?>
 				</select>
 			</label>
-			<label><?php esc_html_e( 'Producto de interes', 'cadv-woo-functionalities' ); ?><input type="text" name="product" value="<?php echo esc_attr( $filters['product'] ); ?>" /></label>
+			<label><?php esc_html_e( 'Producto o servicio de interes', 'cadv-woo-functionalities' ); ?><input type="text" name="product" value="<?php echo esc_attr( $filters['product'] ); ?>" /></label>
 			<label><?php esc_html_e( 'Tipo de cultivo', 'cadv-woo-functionalities' ); ?><input type="text" name="crop_type" value="<?php echo esc_attr( $filters['crop_type'] ); ?>" /></label>
 			<label><?php esc_html_e( 'Fuente', 'cadv-woo-functionalities' ); ?><input type="text" name="source" value="<?php echo esc_attr( $filters['source'] ); ?>" /></label>
 			<label><?php esc_html_e( 'Convertido', 'cadv-woo-functionalities' ); ?>
@@ -1051,6 +1053,7 @@ final class CADV_Woo_Functionalities {
 	 * Render CRM CTA form via shortcode.
 	 *
 	 * Usage: [cesarandev_crm_cta type="quote"]
+	 * Usage: [cesarandev_crm_cta type="services"]
 	 * Usage: [cesarandev_crm_cta type="newsletter"]
 	 * Elementor URL: [cesarandev_crm_cta type="quote" mode="url"]
 	 *
@@ -1094,11 +1097,29 @@ final class CADV_Woo_Functionalities {
 		}
 
 		$is_newsletter = 'newsletter' === $type;
-		$eyebrow       = $atts['eyebrow'] ? $atts['eyebrow'] : ( $is_newsletter ? __( 'Newsletter', 'cadv-woo-functionalities' ) : __( 'Cotizacion', 'cadv-woo-functionalities' ) );
-		$title         = $atts['title'] ? $atts['title'] : ( $is_newsletter ? __( 'Registrate al newsletter', 'cadv-woo-functionalities' ) : __( 'Solicitar cotizacion', 'cadv-woo-functionalities' ) );
-		$description   = $atts['description'] ? $atts['description'] : ( $is_newsletter ? __( 'Recibe informacion tecnica y novedades comerciales.', 'cadv-woo-functionalities' ) : __( 'Cuentenos sobre su cultivo y nuestro equipo tecnico-comercial le respondera.', 'cadv-woo-functionalities' ) );
-		$privacy_url   = $atts['privacy_url'] ? esc_url_raw( $atts['privacy_url'] ) : get_privacy_policy_url();
-		$categories    = $this->get_product_interest_options();
+		$is_services   = 'services' === $type;
+		$defaults      = array(
+			'quote'      => array(
+				'eyebrow'     => __( 'Cotizacion', 'cadv-woo-functionalities' ),
+				'title'       => __( 'Solicitar cotizacion', 'cadv-woo-functionalities' ),
+				'description' => __( 'Cuentenos sobre su cultivo y nuestro equipo tecnico-comercial le respondera.', 'cadv-woo-functionalities' ),
+			),
+			'services'   => array(
+				'eyebrow'     => __( 'Servicios', 'cadv-woo-functionalities' ),
+				'title'       => __( 'Solicitar servicio', 'cadv-woo-functionalities' ),
+				'description' => __( 'Cuentenos que necesita su cultivo. Nuestro equipo tecnico-comercial le respondera en maximo 5 dias habiles.', 'cadv-woo-functionalities' ),
+			),
+			'newsletter' => array(
+				'eyebrow'     => __( 'Newsletter', 'cadv-woo-functionalities' ),
+				'title'       => __( 'Registrate al newsletter', 'cadv-woo-functionalities' ),
+				'description' => __( 'Recibe informacion tecnica y novedades comerciales.', 'cadv-woo-functionalities' ),
+			),
+		);
+		$eyebrow          = $atts['eyebrow'] ? $atts['eyebrow'] : $defaults[ $type ]['eyebrow'];
+		$title            = $atts['title'] ? $atts['title'] : $defaults[ $type ]['title'];
+		$description      = $atts['description'] ? $atts['description'] : $defaults[ $type ]['description'];
+		$privacy_url      = $atts['privacy_url'] ? esc_url_raw( $atts['privacy_url'] ) : get_privacy_policy_url();
+		$interest_options = $is_services ? $this->get_service_interest_options() : $this->get_product_interest_options();
 
 		ob_start();
 		?>
@@ -1144,11 +1165,11 @@ final class CADV_Woo_Functionalities {
 
 				<?php if ( ! $is_newsletter ) : ?>
 					<label class="cesarandev-wf-cta__field">
-						<span><?php esc_html_e( 'Producto de interes', 'cadv-woo-functionalities' ); ?></span>
-						<select name="product_interest">
-							<option value=""><?php esc_html_e( 'Seleccione una familia', 'cadv-woo-functionalities' ); ?></option>
-							<?php foreach ( $categories as $category ) : ?>
-								<option value="<?php echo esc_attr( $category['value'] ); ?>"><?php echo esc_html( $category['label'] ); ?></option>
+						<span><?php echo esc_html( $is_services ? __( 'Servicio de interes *', 'cadv-woo-functionalities' ) : __( 'Producto de interes', 'cadv-woo-functionalities' ) ); ?></span>
+						<select name="product_interest" <?php required( $is_services ); ?>>
+							<option value=""><?php echo esc_html( $is_services ? __( 'Seleccione un servicio', 'cadv-woo-functionalities' ) : __( 'Seleccione una familia', 'cadv-woo-functionalities' ) ); ?></option>
+							<?php foreach ( $interest_options as $interest_option ) : ?>
+								<option value="<?php echo esc_attr( $interest_option['value'] ); ?>"><?php echo esc_html( $interest_option['label'] ); ?></option>
 							<?php endforeach; ?>
 						</select>
 					</label>
@@ -1173,11 +1194,59 @@ final class CADV_Woo_Functionalities {
 				</label>
 
 				<div class="cesarandev-wf-cta__message cesarandev-wf-form__message" data-cesarandev-wf-cta-message role="status" aria-live="polite"></div>
-				<button class="cesarandev-wf-cta__submit" type="submit"><?php echo esc_html( $is_newsletter ? __( 'Registrarme', 'cadv-woo-functionalities' ) : __( 'Enviar solicitud', 'cadv-woo-functionalities' ) ); ?></button>
+				<button class="cesarandev-wf-cta__submit" type="submit"><?php echo esc_html( $is_newsletter ? __( 'Registrarme', 'cadv-woo-functionalities' ) : ( $is_services ? __( 'Solicitar servicio', 'cadv-woo-functionalities' ) : __( 'Enviar solicitud', 'cadv-woo-functionalities' ) ) ); ?></button>
 			</form>
 		</div>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * Render a WhatsApp button or return its URL for an Elementor link field.
+	 *
+	 * Usage: [cesarandev_whatsapp message="Hola, quisiera mas informacion."]
+	 * Elementor URL: [cesarandev_whatsapp mode="url" message="Hola, quisiera mas informacion."]
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_whatsapp_shortcode( $atts = array() ) {
+		$atts = shortcode_atts(
+			array(
+				'message'    => '',
+				'text'       => __( 'Escribir por WhatsApp', 'cadv-woo-functionalities' ),
+				'mode'       => 'button',
+				'product_id' => 0,
+			),
+			$atts,
+			'cesarandev_whatsapp'
+		);
+
+		$product = $this->resolve_shortcode_product( absint( $atts['product_id'] ) );
+		$message = sanitize_textarea_field( $atts['message'] );
+		$url     = $this->build_whatsapp_url( $message, $product );
+		$mode    = sanitize_key( $atts['mode'] );
+
+		if ( ! $url ) {
+			return '';
+		}
+
+		if ( in_array( $mode, array( 'url', 'link' ), true ) ) {
+			return esc_url_raw( $url );
+		}
+
+		$this->enqueue_frontend_assets();
+
+		$button_text = sanitize_text_field( $atts['text'] );
+		$button_text = $button_text ? $button_text : __( 'Escribir por WhatsApp', 'cadv-woo-functionalities' );
+
+		return sprintf(
+			'<a class="cesarandev-wf-button cesarandev-wf-whatsapp-button cesarandev-wf-whatsapp-shortcode" href="%1$s" target="_blank" rel="noopener noreferrer" aria-label="%2$s">%3$s<span>%4$s</span></a>',
+			esc_url( $url ),
+			esc_attr( $button_text ),
+			$this->get_whatsapp_icon_svg(), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			esc_html( $button_text )
+		);
 	}
 
 	/**
@@ -1201,7 +1270,7 @@ final class CADV_Woo_Functionalities {
 	public function render_queued_crm_cta_modals() {
 		foreach ( $this->queued_cta_modals as $type => $atts ) {
 			$modal_id   = $this->get_crm_cta_modal_id( $type );
-			$aria_label = 'newsletter' === $type ? __( 'Formulario de newsletter', 'cadv-woo-functionalities' ) : __( 'Formulario de cotizacion', 'cadv-woo-functionalities' );
+			$aria_label = 'newsletter' === $type ? __( 'Formulario de newsletter', 'cadv-woo-functionalities' ) : ( 'services' === $type ? __( 'Formulario de servicios', 'cadv-woo-functionalities' ) : __( 'Formulario de cotizacion', 'cadv-woo-functionalities' ) );
 			?>
 			<div id="<?php echo esc_attr( $modal_id ); ?>" class="cesarandev-wf-modal cesarandev-wf-cta-modal" data-cesarandev-wf-cta-modal hidden>
 				<div class="cesarandev-wf-modal__overlay" data-cesarandev-wf-close-cta-modal></div>
@@ -1239,6 +1308,10 @@ final class CADV_Woo_Functionalities {
 
 		if ( in_array( $type, array( 'newsletter', 'news' ), true ) ) {
 			return 'newsletter';
+		}
+
+		if ( in_array( $type, array( 'services', 'service', 'servicios', 'servicio' ), true ) ) {
+			return 'services';
 		}
 
 		return '';
@@ -1290,6 +1363,30 @@ final class CADV_Woo_Functionalities {
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Get AgroBrokers service options for the services CTA.
+	 *
+	 * @return array
+	 */
+	private function get_service_interest_options() {
+		$services = array(
+			'AgroPilot — Servicio de dron agrícola',
+			'Análisis de suelo y foliar',
+			'Asesoría agronómica en campo',
+			'Plan de fertilización personalizado',
+		);
+
+		return array_map(
+			function ( $service ) {
+				return array(
+					'value' => $service,
+					'label' => $service,
+				);
+			},
+			$services
+		);
 	}
 
 	/**
@@ -1647,11 +1744,13 @@ final class CADV_Woo_Functionalities {
 			wp_send_json_error( array( 'message' => $lead_id->get_error_message() ), 500 );
 		}
 
-		wp_send_json_success(
-			array(
-				'message' => 'newsletter' === $data['cta_type'] ? __( 'Registro recibido. Gracias por suscribirte.', 'cadv-woo-functionalities' ) : __( 'Solicitud recibida. Nuestro equipo tecnico-comercial te contactara pronto.', 'cadv-woo-functionalities' ),
-			)
+		$success_messages = array(
+			'quote'      => __( 'Solicitud recibida. Nuestro equipo tecnico-comercial te contactara pronto.', 'cadv-woo-functionalities' ),
+			'services'   => __( 'Solicitud de servicio recibida. Nuestro equipo tecnico-comercial te contactara pronto.', 'cadv-woo-functionalities' ),
+			'newsletter' => __( 'Registro recibido. Gracias por suscribirte.', 'cadv-woo-functionalities' ),
 		);
+
+		wp_send_json_success( array( 'message' => $success_messages[ $data['cta_type'] ] ) );
 	}
 
 	/**
@@ -1691,11 +1790,19 @@ final class CADV_Woo_Functionalities {
 			}
 		}
 
-		if ( 'quote' === $data['cta_type'] ) {
+		if ( in_array( $data['cta_type'], array( 'quote', 'services' ), true ) ) {
 			foreach ( array( 'company', 'position', 'phone' ) as $field ) {
 				if ( empty( $data[ $field ] ) ) {
 					return new WP_Error( 'cesarandev_wf_cta_missing_quote_data', __( 'Completa todos los campos obligatorios.', 'cadv-woo-functionalities' ) );
 				}
+			}
+		}
+
+		if ( 'services' === $data['cta_type'] ) {
+			$allowed_services = wp_list_pluck( $this->get_service_interest_options(), 'value' );
+
+			if ( empty( $data['product_interest'] ) || ! in_array( $data['product_interest'], $allowed_services, true ) ) {
+				return new WP_Error( 'cesarandev_wf_cta_missing_service', __( 'Selecciona un servicio valido.', 'cadv-woo-functionalities' ) );
 			}
 		}
 
@@ -2215,7 +2322,7 @@ final class CADV_Woo_Functionalities {
 				'Telefono',
 				'Empresa',
 				'Cargo',
-				'Producto',
+				'Producto / servicio',
 				'Archivo descargable',
 				'Tipo de cultivo',
 				'Tipo CTA',
@@ -2600,7 +2707,7 @@ final class CADV_Woo_Functionalities {
 			$filters['delete_status'] = '';
 		}
 
-		if ( ! in_array( $filters['cta_type'], array( '', 'quote', 'newsletter' ), true ) ) {
+		if ( ! in_array( $filters['cta_type'], array( '', 'quote', 'services', 'newsletter' ), true ) ) {
 			$filters['cta_type'] = '';
 		}
 
@@ -2851,6 +2958,7 @@ final class CADV_Woo_Functionalities {
 	private function format_cta_types_label( array $types ) {
 		$labels = array(
 			'quote'      => __( 'Cotizacion', 'cadv-woo-functionalities' ),
+			'services'   => __( 'Servicios', 'cadv-woo-functionalities' ),
 			'newsletter' => __( 'Newsletter', 'cadv-woo-functionalities' ),
 		);
 		$output = array();
@@ -3327,6 +3435,19 @@ final class CADV_Woo_Functionalities {
 	 * @return string
 	 */
 	private function get_whatsapp_url( WC_Product $product ) {
+		return $this->build_whatsapp_url( '', $product );
+	}
+
+	/**
+	 * Build a WhatsApp URL using the configured phone and a custom message.
+	 *
+	 * Available variables: {product_name}, {product_url}, {page_title}, {page_url}.
+	 *
+	 * @param string          $custom_message Optional shortcode message.
+	 * @param WC_Product|null $product        Optional product context.
+	 * @return string
+	 */
+	private function build_whatsapp_url( $custom_message = '', $product = null ) {
 		$phone = get_option( self::OPTION_PHONE, '' );
 		$phone = $this->sanitize_phone( $phone );
 
@@ -3334,7 +3455,7 @@ final class CADV_Woo_Functionalities {
 			return '';
 		}
 
-		$message = $this->build_product_message( $product );
+		$message = $this->build_whatsapp_message( $custom_message, $product );
 
 		return sprintf(
 			'https://wa.me/%1$s?text=%2$s',
@@ -3344,21 +3465,33 @@ final class CADV_Woo_Functionalities {
 	}
 
 	/**
-	 * Build product message from configured template.
+	 * Build a custom WhatsApp message and replace supported variables.
 	 *
-	 * @param WC_Product $product WooCommerce product.
+	 * @param string          $custom_message Optional shortcode message.
+	 * @param WC_Product|null $product        Optional product context.
 	 * @return string
 	 */
-	private function build_product_message( WC_Product $product ) {
-		$template = get_option( self::OPTION_MESSAGE_TEMPLATE, $this->get_default_message_template() );
+	private function build_whatsapp_message( $custom_message = '', $product = null ) {
+		$queried_id = get_queried_object_id();
+		$page_title = $queried_id ? wp_strip_all_tags( get_the_title( $queried_id ) ) : '';
+		$page_url   = $queried_id ? get_permalink( $queried_id ) : '';
+		$page_title = $page_title ? $page_title : get_bloginfo( 'name' );
+		$page_url   = $page_url ? $page_url : $this->get_current_url();
 
-		if ( '' === trim( $template ) ) {
-			$template = $this->get_default_message_template();
+		if ( '' !== trim( $custom_message ) ) {
+			$template = $custom_message;
+		} elseif ( $product instanceof WC_Product ) {
+			$template = get_option( self::OPTION_MESSAGE_TEMPLATE, $this->get_default_message_template() );
+			$template = '' !== trim( $template ) ? $template : $this->get_default_message_template();
+		} else {
+			$template = __( 'Hola, quisiera mas informacion sobre {page_title}. {page_url}', 'cadv-woo-functionalities' );
 		}
 
 		$replacements = array(
-			'{product_name}' => wp_strip_all_tags( $product->get_name() ),
-			'{product_url}'  => get_permalink( $product->get_id() ),
+			'{product_name}' => $product instanceof WC_Product ? wp_strip_all_tags( $product->get_name() ) : $page_title,
+			'{product_url}'  => $product instanceof WC_Product ? get_permalink( $product->get_id() ) : $page_url,
+			'{page_title}'   => $page_title,
+			'{page_url}'     => $page_url,
 		);
 
 		return strtr( $template, $replacements );

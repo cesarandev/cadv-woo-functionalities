@@ -177,6 +177,10 @@
 				var requiredFields = type === 'newsletter' ? ['full_name', 'email'] : ['full_name', 'company', 'position', 'phone', 'email'];
 				var i;
 
+				if (type === 'services') {
+					requiredFields.push('product_interest');
+				}
+
 				for (i = 0; i < requiredFields.length; i += 1) {
 					if (!String(formData.get(requiredFields[i]) || '').trim()) {
 						setMessage(message, getMessage('required', 'Completa todos los campos obligatorios.'), 'error');
