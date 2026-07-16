@@ -104,6 +104,24 @@ Puedes personalizar textos:
 [cesarandev_crm_cta type="quote" title="Solicitar cotizacion" eyebrow="Cotizacion" description="Cuentenos sobre su cultivo y le responderemos."]
 ```
 
+### Usarlo como enlace de un boton de Elementor
+
+En el campo **Enlace** del boton, selecciona la etiqueta dinamica **Shortcode** y usa:
+
+```text
+[cesarandev_crm_cta type="quote" mode="url"]
+```
+
+El shortcode devuelve un enlace interno y agrega automaticamente el formulario en un modal. Para newsletter puedes cambiar `type="quote"` por `type="newsletter"`. El shortcode sin `mode="url"` sigue siendo un formulario completo y debe colocarse en el widget **Shortcode**, no directamente en el campo Enlace.
+
+Si la version de Elementor no ofrece la etiqueta dinamica **Shortcode**, agrega un widget **Shortcode** en cualquier parte de la pagina con:
+
+```text
+[cesarandev_crm_cta type="quote" mode="modal"]
+```
+
+Luego usa `#cesarandev-crm-cta-quote` como enlace normal del boton. El widget no ocupa espacio: solo registra el formulario modal.
+
 ## Shortcode de marketplace
 
 Usa este shortcode en la pagina de marketplace:

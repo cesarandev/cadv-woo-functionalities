@@ -220,6 +220,96 @@
 		});
 	}
 
+	function initCtaModals() {
+		var modals = document.querySelectorAll('[data-cesarandev-wf-cta-modal]');
+		var activeModal = null;
+		var lastFocusedElement = null;
+
+		if (!modals.length) {
+			return;
+		}
+
+		function getModalFromTarget(target) {
+			var id;
+			var modal;
+
+			if (!target || target.indexOf('#') === -1) {
+				return null;
+			}
+
+			id = target.substring(target.lastIndexOf('#') + 1);
+			modal = document.getElementById(id);
+
+			return modal && modal.hasAttribute('data-cesarandev-wf-cta-modal') ? modal : null;
+		}
+
+		function openModal(modal) {
+			var firstInput;
+
+			if (!modal) {
+				return;
+			}
+
+			lastFocusedElement = document.activeElement;
+			activeModal = modal;
+			modal.hidden = false;
+			document.body.classList.add('cesarandev-wf-modal-open');
+
+			firstInput = modal.querySelector('input:not([type="hidden"])');
+			if (firstInput) {
+				firstInput.focus();
+			}
+		}
+
+		function closeModal(modal) {
+			if (!modal) {
+				return;
+			}
+
+			modal.hidden = true;
+			activeModal = null;
+			document.body.classList.remove('cesarandev-wf-modal-open');
+
+			if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+				lastFocusedElement.focus();
+			}
+		}
+
+		document.addEventListener('click', function (event) {
+			var closeButton = event.target.closest('[data-cesarandev-wf-close-cta-modal]');
+			var trigger;
+			var target;
+			var modal;
+
+			if (closeButton) {
+				closeModal(closeButton.closest('[data-cesarandev-wf-cta-modal]'));
+				return;
+			}
+
+			trigger = event.target.closest('a[href], [data-cesarandev-wf-cta-target]');
+			if (!trigger) {
+				return;
+			}
+
+			target = trigger.getAttribute('data-cesarandev-wf-cta-target') || trigger.getAttribute('href');
+			modal = getModalFromTarget(target);
+
+			if (modal) {
+				event.preventDefault();
+				openModal(modal);
+			}
+		});
+
+		document.addEventListener('keydown', function (event) {
+			if (event.key === 'Escape' && activeModal) {
+				closeModal(activeModal);
+			}
+		});
+
+		openModal(getModalFromTarget(window.location.hash));
+	}
+
 	initTechnicalSheetModal();
+	initCtaModals();
 	initCtaForms();
 }());

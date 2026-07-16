@@ -431,6 +431,20 @@ body.cesarandev-wf-modal-open {
 	width: 100%;
 }
 
+.cesarandev-wf-cta-modal .cesarandev-wf-modal__dialog {
+	max-width: 760px;
+	width: min(100%, 760px);
+}
+
+.cesarandev-wf-cta-modal .cesarandev-wf-cta {
+	border: 0;
+	max-width: none;
+}
+
+.cesarandev-wf-cta-modal .cesarandev-wf-cta__header {
+	padding-right: 72px;
+}
+
 .cesarandev-wf-cta__header {
 	border-bottom: 1px solid #e2e8f0;
 	padding: 24px 23px 18px;

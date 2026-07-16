@@ -49,6 +49,13 @@ final class CADV_Woo_Functionalities {
 	private $rendered_modal_products = array();
 
 	/**
+	 * CTA modals requested by URL-mode shortcodes.
+	 *
+	 * @var array
+	 */
+	private $queued_cta_modals = array();
+
+	/**
 	 * Get singleton instance.
 	 *
 	 * @return self
@@ -891,6 +898,24 @@ final class CADV_Woo_Functionalities {
 				),
 			)
 		);
+
+		if ( did_action( 'wp_head' ) ) {
+			add_action( 'wp_footer', array( $this, 'print_late_frontend_styles' ), 1 );
+		}
+	}
+
+	/**
+	 * Print styles enqueued by shortcodes rendered after wp_head.
+	 *
+	 * Elementor can resolve a shortcode while rendering page content, after the
+	 * regular stylesheet queue has already been printed.
+	 */
+	public function print_late_frontend_styles() {
+		if ( wp_style_is( 'cadv-woo-functionalities', 'done' ) ) {
+			return;
+		}
+
+		wp_print_styles( array( 'cadv-woo-functionalities-font', 'cadv-woo-functionalities' ) );
 	}
 
 	/**
@@ -1027,6 +1052,7 @@ final class CADV_Woo_Functionalities {
 	 *
 	 * Usage: [cesarandev_crm_cta type="quote"]
 	 * Usage: [cesarandev_crm_cta type="newsletter"]
+	 * Elementor URL: [cesarandev_crm_cta type="quote" mode="url"]
 	 *
 	 * @param array $atts Shortcode attributes.
 	 * @return string
@@ -1035,6 +1061,7 @@ final class CADV_Woo_Functionalities {
 		$atts = shortcode_atts(
 			array(
 				'type'        => 'quote',
+				'mode'        => 'form',
 				'title'       => '',
 				'eyebrow'     => '',
 				'description' => '',
@@ -1051,6 +1078,20 @@ final class CADV_Woo_Functionalities {
 		}
 
 		$this->enqueue_frontend_assets();
+
+		$mode = sanitize_key( $atts['mode'] );
+
+		if ( in_array( $mode, array( 'url', 'link' ), true ) ) {
+			$this->queue_crm_cta_modal( $type, $atts );
+
+			return '#' . $this->get_crm_cta_modal_id( $type );
+		}
+
+		if ( 'modal' === $mode ) {
+			$this->queue_crm_cta_modal( $type, $atts );
+
+			return '';
+		}
 
 		$is_newsletter = 'newsletter' === $type;
 		$eyebrow       = $atts['eyebrow'] ? $atts['eyebrow'] : ( $is_newsletter ? __( 'Newsletter', 'cadv-woo-functionalities' ) : __( 'Cotizacion', 'cadv-woo-functionalities' ) );
@@ -1137,6 +1178,50 @@ final class CADV_Woo_Functionalities {
 		</div>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * Queue a CTA modal when Elementor resolves the shortcode as a button URL.
+	 *
+	 * @param string $type Normalized CTA type.
+	 * @param array  $atts Shortcode attributes.
+	 */
+	private function queue_crm_cta_modal( $type, array $atts ) {
+		if ( ! isset( $this->queued_cta_modals[ $type ] ) ) {
+			$atts['mode']                     = 'form';
+			$this->queued_cta_modals[ $type ] = $atts;
+		}
+
+		add_action( 'wp_footer', array( $this, 'render_queued_crm_cta_modals' ), 5 );
+	}
+
+	/**
+	 * Render CTA modals requested by URL-mode shortcodes.
+	 */
+	public function render_queued_crm_cta_modals() {
+		foreach ( $this->queued_cta_modals as $type => $atts ) {
+			$modal_id   = $this->get_crm_cta_modal_id( $type );
+			$aria_label = 'newsletter' === $type ? __( 'Formulario de newsletter', 'cadv-woo-functionalities' ) : __( 'Formulario de cotizacion', 'cadv-woo-functionalities' );
+			?>
+			<div id="<?php echo esc_attr( $modal_id ); ?>" class="cesarandev-wf-modal cesarandev-wf-cta-modal" data-cesarandev-wf-cta-modal hidden>
+				<div class="cesarandev-wf-modal__overlay" data-cesarandev-wf-close-cta-modal></div>
+				<div class="cesarandev-wf-modal__dialog" role="dialog" aria-modal="true" aria-label="<?php echo esc_attr( $aria_label ); ?>">
+					<button type="button" class="cesarandev-wf-modal__close" data-cesarandev-wf-close-cta-modal aria-label="<?php esc_attr_e( 'Cerrar', 'cadv-woo-functionalities' ); ?>">&times;</button>
+					<?php echo $this->render_crm_cta_shortcode( $atts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Generated and escaped by the shortcode renderer. ?>
+				</div>
+			</div>
+			<?php
+		}
+	}
+
+	/**
+	 * Get the stable fragment ID used by an Elementor button and its CTA modal.
+	 *
+	 * @param string $type Normalized CTA type.
+	 * @return string
+	 */
+	private function get_crm_cta_modal_id( $type ) {
+		return 'cesarandev-crm-cta-' . sanitize_html_class( $type );
 	}
 
 	/**
