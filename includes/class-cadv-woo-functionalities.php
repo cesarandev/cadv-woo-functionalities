@@ -1166,7 +1166,7 @@ final class CADV_Woo_Functionalities {
 				<?php if ( ! $is_newsletter ) : ?>
 					<label class="cesarandev-wf-cta__field">
 						<span><?php echo esc_html( $is_services ? __( 'Servicio de interes *', 'cadv-woo-functionalities' ) : __( 'Producto de interes', 'cadv-woo-functionalities' ) ); ?></span>
-						<select name="product_interest" <?php required( $is_services ); ?>>
+						<select name="product_interest"<?php if ( $is_services ) : ?> required="required"<?php endif; ?>>
 							<option value=""><?php echo esc_html( $is_services ? __( 'Seleccione un servicio', 'cadv-woo-functionalities' ) : __( 'Seleccione una familia', 'cadv-woo-functionalities' ) ); ?></option>
 							<?php foreach ( $interest_options as $interest_option ) : ?>
 								<option value="<?php echo esc_attr( $interest_option['value'] ); ?>"><?php echo esc_html( $interest_option['label'] ); ?></option>
