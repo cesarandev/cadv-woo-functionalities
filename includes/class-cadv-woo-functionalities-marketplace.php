@@ -1088,7 +1088,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 			<div class="cadv-marketplace-card__media">
 				<span class="cadv-marketplace-card__badge"><?php echo esc_html( $line_name ); ?></span>
 				<?php if ( $product->get_image_id() ) : ?>
-					<?php echo $product->get_image( 'woocommerce_thumbnail', array( 'class' => 'cadv-marketplace-card__image' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php echo $product->get_image( 'full', array( 'class' => 'cadv-marketplace-card__image' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				<?php else : ?>
 					<div class="cadv-marketplace-card__placeholder">
 						<span aria-hidden="true">&#9633;</span>

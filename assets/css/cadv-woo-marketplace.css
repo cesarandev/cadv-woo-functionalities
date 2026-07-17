@@ -396,7 +396,8 @@
 
 .cadv-marketplace-card__image {
 	display: block;
-	height: 210px;
+	height: auto;
+	max-height: 210px;
 	max-width: 100%;
 	object-fit: contain;
 	width: auto;
@@ -567,7 +568,7 @@
 	}
 
 	.cadv-marketplace-card__image {
-		height: 190px;
+		max-height: 190px;
 	}
 }
 
@@ -731,7 +732,7 @@
 	}
 
 	.cadv-marketplace-card__image {
-		height: 165px;
+		max-height: 165px;
 	}
 
 	.cadv-marketplace-card__placeholder {
