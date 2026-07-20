@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.44" src="https://img.shields.io/badge/versión-1.1.44-315c27?style=flat-square">
+  <img alt="Versión 1.1.45" src="https://img.shields.io/badge/versión-1.1.45-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -484,8 +484,12 @@ Si no existe un número global configurado, el shortcode no imprime contenido.
 | `[cadv_marketplace_search]` | Buscador externo para el marketplace. |
 | `[cesarandev_crm_cta]` | Formularios o modales de cotización, servicios y newsletter. |
 | `[cesarandev_whatsapp]` | Botón o URL de WhatsApp. |
+| `[cadv_mi_espacio]` | Icono de acceso a `/micuenta/`; solo se muestra con la sesión iniciada. |
+| `[cadv_mi_cuenta]` | Área del cliente con sus datos B2B y fichas técnicas disponibles. |
 
 Los shortcodes de producto aceptan `product_id="123"`. Si el atributo se omite, resuelven primero el objeto global de WooCommerce, la página de producto y la entrada actual.
+
+`[cadv_mi_espacio]` admite `label="Mi espacio"` y `url="/micuenta/"`. El texto se presenta como popover al pasar el cursor o enfocar el icono. Para crear el área del cliente, publica una página con slug `micuenta` e inserta `[cadv_mi_cuenta]`; los visitantes verán el formulario de acceso de WooCommerce y los usuarios autenticados verán la información capturada por el plugin.
 
 ## Importación y exportación de productos
 

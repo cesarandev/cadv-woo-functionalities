@@ -93,6 +93,8 @@ final class CADV_Woo_Functionalities {
 		add_shortcode( 'cesarandev_ficha_tecnica', array( $this, 'render_actions_shortcode' ) );
 		add_shortcode( 'cesarandev_crm_cta', array( $this, 'render_crm_cta_shortcode' ) );
 		add_shortcode( 'cesarandev_whatsapp', array( $this, 'render_whatsapp_shortcode' ) );
+		add_shortcode( 'cadv_mi_espacio', array( $this, 'render_my_space_shortcode' ) );
+		add_shortcode( 'cadv_mi_cuenta', array( $this, 'render_my_account_shortcode' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( CADV_WOO_FUNCTIONALITIES_FILE ), array( $this, 'add_plugin_action_links' ) );
 		add_action( 'admin_notices', array( $this, 'render_woocommerce_notice' ) );
 		add_filter( 'woocommerce_account_menu_items', array( $this, 'filter_restricted_account_menu' ), 20 );
@@ -1054,6 +1056,168 @@ final class CADV_Woo_Functionalities {
 		return sprintf(
 			'<span class="cesarandev-wf-category-pill">%s</span>',
 			esc_html( $line->name )
+		);
+	}
+
+	/**
+	 * Render the authenticated customer shortcut.
+	 *
+	 * Usage: [cadv_mi_espacio]
+	 * Optional: [cadv_mi_espacio label="Mi espacio" url="/micuenta/"]
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	public function render_my_space_shortcode( $atts = array() ) {
+		if ( ! is_user_logged_in() ) {
+			return '';
+		}
+
+		$atts = shortcode_atts(
+			array(
+				'label' => __( 'Mi espacio', 'cadv-woo-functionalities' ),
+				'url'   => '',
+			),
+			$atts,
+			'cadv_mi_espacio'
+		);
+		$label = sanitize_text_field( $atts['label'] );
+		$url   = $this->get_my_account_url( $atts['url'] );
+
+		if ( '' === $label ) {
+			$label = __( 'Mi espacio', 'cadv-woo-functionalities' );
+		}
+
+		$this->enqueue_frontend_assets();
+
+		return sprintf(
+			'<span class="cesarandev-wf-my-space"><a class="cesarandev-wf-my-space__link" href="%1$s" aria-label="%2$s"><svg class="cesarandev-wf-my-space__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5.33 0-8 2.67-8 5.25C4 20.77 5.23 22 6.75 22h10.5A2.75 2.75 0 0 0 20 19.25C20 16.67 17.33 14 12 14Z"/></svg><span class="cesarandev-wf-my-space__popover" role="tooltip">%3$s</span></a></span>',
+			esc_url( $url ),
+			esc_attr( $label ),
+			esc_html( $label )
+		);
+	}
+
+	/**
+	 * Render the customer area with the information stored by this plugin.
+	 *
+	 * Usage: [cadv_mi_cuenta]
+	 *
+	 * @return string
+	 */
+	public function render_my_account_shortcode() {
+		if ( ! $this->is_woocommerce_active() ) {
+			return '';
+		}
+
+		$this->enqueue_frontend_assets();
+		ob_start();
+
+		if ( ! is_user_logged_in() ) {
+			?>
+			<section class="cesarandev-wf-my-account cesarandev-wf-my-account--login">
+				<h2><?php esc_html_e( 'Mi espacio', 'cadv-woo-functionalities' ); ?></h2>
+				<p><?php esc_html_e( 'Inicia sesion para consultar tus datos y fichas tecnicas.', 'cadv-woo-functionalities' ); ?></p>
+				<?php
+				woocommerce_login_form(
+					array(
+						'redirect' => $this->get_my_account_url(),
+					)
+				);
+				?>
+			</section>
+			<?php
+			return ob_get_clean();
+		}
+
+		$user_id   = get_current_user_id();
+		$user      = get_userdata( $user_id );
+		$fields    = $this->get_customer_account_fields( $user_id );
+		$downloads = function_exists( 'wc_get_customer_available_downloads' ) ? wc_get_customer_available_downloads( $user_id ) : array();
+		?>
+		<section class="cesarandev-wf-my-account">
+			<header class="cesarandev-wf-my-account__header">
+				<div class="cesarandev-wf-my-account__avatar" aria-hidden="true">
+					<svg viewBox="0 0 24 24" focusable="false"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5.33 0-8 2.67-8 5.25C4 20.77 5.23 22 6.75 22h10.5A2.75 2.75 0 0 0 20 19.25C20 16.67 17.33 14 12 14Z"/></svg>
+				</div>
+				<div>
+					<span><?php esc_html_e( 'Mi espacio', 'cadv-woo-functionalities' ); ?></span>
+					<h2><?php echo esc_html( $user instanceof WP_User ? $user->display_name : __( 'Mi cuenta', 'cadv-woo-functionalities' ) ); ?></h2>
+				</div>
+				<a class="cesarandev-wf-my-account__logout" href="<?php echo esc_url( wc_logout_url( $this->get_my_account_url() ) ); ?>"><?php esc_html_e( 'Cerrar sesion', 'cadv-woo-functionalities' ); ?></a>
+			</header>
+
+			<div class="cesarandev-wf-my-account__section">
+				<h3><?php esc_html_e( 'Informacion de la cuenta', 'cadv-woo-functionalities' ); ?></h3>
+				<dl class="cesarandev-wf-my-account__details">
+					<?php foreach ( $fields as $label => $value ) : ?>
+						<div>
+							<dt><?php echo esc_html( $label ); ?></dt>
+							<dd><?php echo esc_html( '' !== trim( (string) $value ) ? $value : __( 'No registrado', 'cadv-woo-functionalities' ) ); ?></dd>
+						</div>
+					<?php endforeach; ?>
+				</dl>
+			</div>
+
+			<div class="cesarandev-wf-my-account__section">
+				<h3><?php esc_html_e( 'Mis fichas tecnicas y descargas', 'cadv-woo-functionalities' ); ?></h3>
+				<?php if ( ! empty( $downloads ) ) : ?>
+					<div class="cesarandev-wf-my-account__downloads">
+						<?php foreach ( $downloads as $download ) : ?>
+							<article class="cesarandev-wf-my-account__download">
+								<div>
+									<strong><?php echo esc_html( isset( $download['product_name'] ) ? $download['product_name'] : __( 'Ficha tecnica', 'cadv-woo-functionalities' ) ); ?></strong>
+									<?php if ( ! empty( $download['download_name'] ) ) : ?>
+										<span><?php echo esc_html( $download['download_name'] ); ?></span>
+									<?php endif; ?>
+								</div>
+								<?php if ( ! empty( $download['download_url'] ) ) : ?>
+									<a class="cesarandev-wf-my-account__download-button" href="<?php echo esc_url( $download['download_url'] ); ?>"><?php esc_html_e( 'Descargar', 'cadv-woo-functionalities' ); ?></a>
+								<?php endif; ?>
+							</article>
+						<?php endforeach; ?>
+					</div>
+				<?php else : ?>
+					<p class="cesarandev-wf-my-account__empty"><?php esc_html_e( 'Todavia no tienes fichas tecnicas disponibles.', 'cadv-woo-functionalities' ); ?></p>
+				<?php endif; ?>
+			</div>
+		</section>
+		<?php
+
+		return ob_get_clean();
+	}
+
+	/**
+	 * Resolve the public customer-area URL.
+	 *
+	 * @param string $custom_url Optional shortcode URL.
+	 * @return string
+	 */
+	private function get_my_account_url( $custom_url = '' ) {
+		$custom_url = trim( (string) $custom_url );
+
+		if ( '' !== $custom_url ) {
+			return 0 === strpos( $custom_url, '/' ) ? home_url( $custom_url ) : $custom_url;
+		}
+
+		return (string) apply_filters( 'cadv_woo_functionalities_my_account_url', home_url( '/micuenta/' ) );
+	}
+
+	/**
+	 * Get the customer information captured by this plugin.
+	 *
+	 * @param int $user_id Customer user ID.
+	 * @return array
+	 */
+	private function get_customer_account_fields( $user_id ) {
+		$user = get_userdata( $user_id );
+
+		return array(
+			__( 'Nombre completo', 'cadv-woo-functionalities' )   => get_user_meta( $user_id, '_cesarandev_wf_full_name', true ) ?: ( $user instanceof WP_User ? $user->display_name : '' ),
+			__( 'Empresa', 'cadv-woo-functionalities' )           => get_user_meta( $user_id, '_cesarandev_wf_company', true ) ?: get_user_meta( $user_id, 'billing_company', true ),
+			__( 'Cargo', 'cadv-woo-functionalities' )             => get_user_meta( $user_id, '_cesarandev_wf_position', true ) ?: get_user_meta( $user_id, 'cesarandev_wf_position', true ),
+			__( 'Correo electronico', 'cadv-woo-functionalities' ) => $user instanceof WP_User ? $user->user_email : '',
+			__( 'Telefono', 'cadv-woo-functionalities' )          => get_user_meta( $user_id, '_cesarandev_wf_phone', true ) ?: get_user_meta( $user_id, 'billing_phone', true ),
 		);
 	}
 
@@ -3427,14 +3591,7 @@ final class CADV_Woo_Functionalities {
 		}
 
 		$user_id  = get_current_user_id();
-		$user     = get_userdata( $user_id );
-		$fields   = array(
-			__( 'Nombre completo', 'cadv-woo-functionalities' ) => get_user_meta( $user_id, '_cesarandev_wf_full_name', true ) ?: ( $user instanceof WP_User ? $user->display_name : '' ),
-			__( 'Empresa', 'cadv-woo-functionalities' )         => get_user_meta( $user_id, '_cesarandev_wf_company', true ) ?: get_user_meta( $user_id, 'billing_company', true ),
-			__( 'Cargo', 'cadv-woo-functionalities' )           => get_user_meta( $user_id, '_cesarandev_wf_position', true ) ?: get_user_meta( $user_id, 'cesarandev_wf_position', true ),
-			__( 'Correo electronico', 'cadv-woo-functionalities' ) => $user instanceof WP_User ? $user->user_email : '',
-			__( 'Telefono', 'cadv-woo-functionalities' )        => get_user_meta( $user_id, '_cesarandev_wf_phone', true ) ?: get_user_meta( $user_id, 'billing_phone', true ),
-		);
+		$fields   = $this->get_customer_account_fields( $user_id );
 		$delete_status = get_user_meta( $user_id, '_cesarandev_wf_delete_request_status', true );
 		?>
 		<div class="cesarandev-wf-account-readonly">
