@@ -368,12 +368,28 @@
 
 .cadv-marketplace-card__media {
 	align-items: center;
-	background: #f7faf8;
+	background-color: var(--line-color, var(--cadv-green, #203212));
 	display: flex;
+	isolation: isolate;
 	justify-content: center;
 	min-height: 232px;
+	overflow: hidden;
 	padding: 20px;
 	position: relative;
+}
+
+.cadv-marketplace-card__media::before {
+	/* Source: https://www.magnific.com/es/vector-gratis/fondo-abstracto-textura-verde-grano_417430007.htm */
+	background-image: url("../images/marketplace-grain-texture.jpg");
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: cover;
+	content: "";
+	inset: 0;
+	opacity: 0.05;
+	pointer-events: none;
+	position: absolute;
+	z-index: 0;
 }
 
 .cadv-marketplace-card__badge {
@@ -392,6 +408,7 @@
 	text-overflow: ellipsis;
 	top: 0;
 	white-space: nowrap;
+	z-index: 2;
 }
 
 .cadv-marketplace-card__image {
@@ -400,7 +417,9 @@
 	max-height: 210px;
 	max-width: 100%;
 	object-fit: contain;
+	position: relative;
 	width: auto;
+	z-index: 1;
 }
 
 .cadv-marketplace-card__placeholder {
@@ -409,7 +428,9 @@
 	display: grid;
 	gap: 10px;
 	justify-items: center;
+	position: relative;
 	text-align: center;
+	z-index: 1;
 }
 
 .cadv-marketplace-card__placeholder span {
