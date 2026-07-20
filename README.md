@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.43" src="https://img.shields.io/badge/versión-1.1.43-315c27?style=flat-square">
+  <img alt="Versión 1.1.44" src="https://img.shields.io/badge/versión-1.1.44-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -291,11 +291,12 @@ Cada tarjeta muestra, cuando existe:
 - Descripción comercial-técnica limitada a 16 palabras.
 - Enlace al producto.
 
-El área visual combina tres capas independientes:
+El área visual combina cuatro capas independientes:
 
 1. Color configurado de la línea.
 2. Textura decorativa local al `50%` de opacidad (`opacity: 0.5`).
-3. Imagen del producto al `100%`.
+3. Suelo y follaje decorativo en WebP con transparencia real, anclado en la base de la tarjeta.
+4. Imagen del producto al `100%`.
 
 La descripción usa este orden de respaldo: descripción comercial-técnica, descripción corta y descripción completa.
 
@@ -594,7 +595,8 @@ cesarandev-woo-func.php
 │   │   ├── cadv-woo-functionalities.css
 │   │   └── cadv-woo-marketplace.css
 │   ├── images/
-│   │   └── marketplace-grain-texture.jpg
+│   │   ├── marketplace-grain-texture.jpg
+│   │   └── marketplace-soil-foliage.webp
 │   └── js/
 │       ├── cadv-woo-functionalities.js
 │       └── cadv-woo-marketplace.js

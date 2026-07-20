@@ -392,6 +392,18 @@
 	z-index: 0;
 }
 
+.cadv-marketplace-card__media::after {
+	background-image: url("../images/marketplace-soil-foliage.webp");
+	background-position: center bottom;
+	background-repeat: no-repeat;
+	background-size: 100% auto;
+	content: "";
+	inset: 0;
+	pointer-events: none;
+	position: absolute;
+	z-index: 1;
+}
+
 .cadv-marketplace-card__badge {
 	background: var(--line-color, var(--cadv-green, #203212));
 	border-radius: 0 0 0 5px;
@@ -408,7 +420,7 @@
 	text-overflow: ellipsis;
 	top: 0;
 	white-space: nowrap;
-	z-index: 2;
+	z-index: 3;
 }
 
 .cadv-marketplace-card__image {
@@ -419,7 +431,7 @@
 	object-fit: contain;
 	position: relative;
 	width: auto;
-	z-index: 1;
+	z-index: 2;
 }
 
 .cadv-marketplace-card__placeholder {
@@ -430,7 +442,7 @@
 	justify-items: center;
 	position: relative;
 	text-align: center;
-	z-index: 1;
+	z-index: 2;
 }
 
 .cadv-marketplace-card__placeholder span {
