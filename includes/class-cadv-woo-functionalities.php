@@ -32,6 +32,7 @@ final class CADV_Woo_Functionalities {
 	const LOGIN_RATE_LIMIT         = 10;
 	const PASSWORD_RECOVERY_LIMIT  = 5;
 	const PASSWORD_RESET_LIMIT     = 10;
+	const ACCOUNT_DELETION_LIMIT   = 3;
 	const CAPTCHA_MAX_AGE          = 12 * HOUR_IN_SECONDS;
 	const MAX_LEAD_INTERACTIONS    = 50;
 
@@ -4455,6 +4456,7 @@ final class CADV_Woo_Functionalities {
 			<?php else : ?>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return window.confirm('<?php echo esc_js( __( 'Confirmas que deseas solicitar la eliminacion de tu cuenta?', 'cadv-woo-functionalities' ) ); ?>');">
 					<input type="hidden" name="action" value="<?php echo esc_attr( self::DELETE_ACCOUNT_ACTION ); ?>" />
+					<?php $this->render_public_captcha_fields( 'account_deletion' ); ?>
 					<?php wp_nonce_field( self::DELETE_ACCOUNT_NONCE ); ?>
 					<button type="submit" class="button"><?php esc_html_e( 'Solicitar eliminacion de cuenta', 'cadv-woo-functionalities' ); ?></button>
 				</form>
@@ -4472,6 +4474,14 @@ final class CADV_Woo_Functionalities {
 		}
 
 		check_admin_referer( self::DELETE_ACCOUNT_NONCE );
+
+		$security = $this->validate_public_submission( 'account_deletion', self::ACCOUNT_DELETION_LIMIT );
+
+		if ( is_wp_error( $security ) ) {
+			wc_add_notice( $security->get_error_message(), 'error' );
+			wp_safe_redirect( wc_get_account_endpoint_url( 'edit-account' ) );
+			exit;
+		}
 
 		$user_id = get_current_user_id();
 		$now     = current_time( 'mysql' );

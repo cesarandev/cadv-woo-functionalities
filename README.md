@@ -499,7 +499,7 @@ El acceso de `[cadv_mi_cuenta]` ocupa el ancho completo y mantiene dentro de `/m
 
 También se admite `login_image="https://dominio.com/imagen.jpg"` o una ruta local como `login_image="/wp-content/uploads/imagen.jpg"`. En tablet el formulario y la imagen conservan las dos columnas; en móvil se apilan para mantener campos, botones y textos legibles.
 
-Los formularios de acceso, recuperación y restablecimiento incluyen CAPTCHA firmado, honeypot y límites por IP. Las contraseñas nuevas deben tener al menos 12 caracteres.
+Los formularios de acceso, recuperación, restablecimiento y solicitud de eliminación incluyen CAPTCHA firmado, honeypot y límites por IP. Las contraseñas nuevas deben tener al menos 12 caracteres.
 
 Nuevas secciones pueden registrarse sin modificar el shortcode mediante el filtro `cadv_woo_functionalities_account_modules`. Cada módulo se identifica por su slug y define `label`, `icon` y un `callback` invocable; opcionalmente puede incluir `capability` para limitar su acceso. El callback recibe el ID del usuario, el slug y la configuración completa del módulo. También están disponibles las acciones `cadv_woo_functionalities_before_account_module` y `cadv_woo_functionalities_after_account_module` para integrar contenido alrededor del módulo activo.
 
@@ -658,7 +658,7 @@ Los pedidos de fichas se crean con `created_via = cesarandev_technical_sheet_req
 ## Seguridad y privacidad
 
 - Los formularios AJAX verifican nonces de WordPress.
-- Los formularios públicos de ficha técnica, CTA y autenticación exigen CAPTCHA firmado, usan un honeypot y limitan por IP incluso los intentos fallidos.
+- Los formularios de ficha técnica, CTA, autenticación y solicitud de eliminación exigen CAPTCHA firmado, usan un honeypot y limitan por IP incluso los intentos fallidos.
 - La búsqueda AJAX del marketplace aplica límite por IP, límites de longitud y resultados acotados.
 - Los formularios administrativos requieren `manage_woocommerce` y nonces específicos.
 - IDs, correos, URLs, textos y colores se sanitizan antes de usarse.
@@ -666,7 +666,7 @@ Los pedidos de fichas se crean con `created_via = cesarandev_technical_sheet_req
 - Los formularios públicos exigen aceptación explícita de privacidad.
 - Las descargas se entregan mediante permisos nativos de WooCommerce.
 - El token de actualizaciones viaja por cabecera sobre HTTPS; las descargas usan URLs temporales firmadas y verificación SHA-256.
-- Las solicitudes de eliminación requieren sesión y confirmación, pero necesitan resolución humana desde el CRM.
+- Las solicitudes de eliminación requieren sesión, nonce, CAPTCHA, límite por IP y confirmación, pero necesitan resolución humana desde el CRM.
 
 Antes de producción, revisa el texto legal de los formularios, configura la página de privacidad y confirma la política de conservación de leads, pedidos y usuarios.
 
