@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.48" src="https://img.shields.io/badge/versión-1.1.48-315c27?style=flat-square">
+  <img alt="Versión 1.1.49" src="https://img.shields.io/badge/versión-1.1.49-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -497,7 +497,7 @@ El acceso de `[cadv_mi_cuenta]` ocupa el ancho completo y mantiene dentro de `/m
 [cadv_mi_cuenta login_image_id="123" login_image_alt="Cultivo de maíz" login_image_title="Soluciones para tu cultivo" login_image_text="Consulta tus documentos y datos comerciales."]
 ```
 
-También se admite `login_image="https://dominio.com/imagen.jpg"` o una ruta local como `login_image="/wp-content/uploads/imagen.jpg"`. En tablet el formulario y la imagen conservan las dos columnas; en móvil se apilan para mantener campos, botones y textos legibles.
+También se admite `login_image="https://dominio.com/imagen.jpg"` o una ruta local como `login_image="/wp-content/uploads/imagen.jpg"`. La imagen predeterminada puede elegirse desde **WooCommerce → CADV Woo Functionalities → Portal de clientes**; los atributos del shortcode tienen prioridad sobre ese ajuste global. En tablet el formulario y la imagen conservan las dos columnas; en móvil se apilan para mantener campos, botones y textos legibles.
 
 Los formularios de acceso, recuperación, restablecimiento y solicitud de eliminación incluyen Google reCAPTCHA v2 cuando sus claves están configuradas, además de honeypot y límites por IP. Las contraseñas nuevas deben tener al menos 12 caracteres.
 

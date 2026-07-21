@@ -14,6 +14,7 @@ final class CADV_Woo_Functionalities {
 	const OPTION_MESSAGE_TEMPLATE     = 'cadv_woo_functionalities_message_template';
 	const OPTION_RECAPTCHA_SITE_KEY   = 'cadv_woo_functionalities_recaptcha_site_key';
 	const OPTION_RECAPTCHA_SECRET_KEY = 'cadv_woo_functionalities_recaptcha_secret_key';
+	const OPTION_LOGIN_IMAGE_ID       = 'cadv_woo_functionalities_login_image_id';
 	const AJAX_ACTION                 = 'cesarandev_wf_request_technical_sheet';
 	const NONCE_ACTION                = 'cesarandev_wf_request_technical_sheet';
 	const CTA_ACTION                  = 'cesarandev_wf_submit_cta';
@@ -88,6 +89,7 @@ final class CADV_Woo_Functionalities {
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
 		add_action( 'admin_init', array( $this, 'maybe_migrate_settings' ), 5 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'wp', array( $this, 'replace_single_add_to_cart' ) );
 		add_action( 'template_redirect', array( $this, 'prepare_custom_password_reset_link' ), 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
@@ -245,6 +247,16 @@ final class CADV_Woo_Functionalities {
 			)
 		);
 
+		register_setting(
+			'cadv_woo_functionalities_settings',
+			self::OPTION_LOGIN_IMAGE_ID,
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'default'           => 0,
+			)
+		);
+
 		add_settings_section(
 			'cadv_woo_functionalities_whatsapp_section',
 			__( 'Configuracion de WhatsApp', 'cadv-woo-functionalities' ),
@@ -269,6 +281,21 @@ final class CADV_Woo_Functionalities {
 		);
 
 		add_settings_section(
+			'cadv_woo_functionalities_customer_portal_section',
+			__( 'Portal de clientes', 'cadv-woo-functionalities' ),
+			array( $this, 'render_customer_portal_settings_intro' ),
+			'cadv-woo-functionalities'
+		);
+
+		add_settings_field(
+			self::OPTION_LOGIN_IMAGE_ID,
+			__( 'Imagen de acceso', 'cadv-woo-functionalities' ),
+			array( $this, 'render_login_image_field' ),
+			'cadv-woo-functionalities',
+			'cadv_woo_functionalities_customer_portal_section'
+		);
+
+		add_settings_section(
 			'cadv_woo_functionalities_recaptcha_section',
 			__( 'Google reCAPTCHA v2', 'cadv-woo-functionalities' ),
 			array( $this, 'render_recaptcha_settings_intro' ),
@@ -289,6 +316,26 @@ final class CADV_Woo_Functionalities {
 			array( $this, 'render_recaptcha_secret_key_field' ),
 			'cadv-woo-functionalities',
 			'cadv_woo_functionalities_recaptcha_section'
+		);
+	}
+
+	/**
+	 * Load the media selector only on this plugin's settings page.
+	 *
+	 * @param string $hook_suffix Current admin page hook.
+	 */
+	public function enqueue_admin_assets( $hook_suffix ) {
+		if ( 'woocommerce_page_cadv-woo-functionalities' !== $hook_suffix ) {
+			return;
+		}
+
+		wp_enqueue_media();
+		wp_enqueue_script(
+			'cadv-woo-functionalities-admin',
+			CADV_WOO_FUNCTIONALITIES_URL . 'assets/js/cadv-woo-functionalities-admin.js',
+			array( 'media-editor' ),
+			CADV_WOO_FUNCTIONALITIES_VERSION,
+			true
 		);
 	}
 
@@ -348,6 +395,32 @@ final class CADV_Woo_Functionalities {
 		);
 
 		echo '<p class="description">' . esc_html__( 'Puedes usar las variables {product_name} y {product_url}.', 'cadv-woo-functionalities' ) . '</p>';
+	}
+
+	/**
+	 * Render customer portal settings instructions.
+	 */
+	public function render_customer_portal_settings_intro() {
+		echo '<p>' . esc_html__( 'Personaliza la imagen que aparece junto al formulario de acceso de Mi cuenta.', 'cadv-woo-functionalities' ) . '</p>';
+	}
+
+	/**
+	 * Render the customer login image media selector.
+	 */
+	public function render_login_image_field() {
+		$image_id  = absint( get_option( self::OPTION_LOGIN_IMAGE_ID, 0 ) );
+		$image_url = $image_id ? wp_get_attachment_image_url( $image_id, 'medium' ) : '';
+		?>
+		<div data-cadv-login-image-field data-frame-title="<?php esc_attr_e( 'Seleccionar imagen de acceso', 'cadv-woo-functionalities' ); ?>" data-button-label="<?php esc_attr_e( 'Usar esta imagen', 'cadv-woo-functionalities' ); ?>" data-select-label="<?php esc_attr_e( 'Seleccionar imagen', 'cadv-woo-functionalities' ); ?>" data-change-label="<?php esc_attr_e( 'Cambiar imagen', 'cadv-woo-functionalities' ); ?>">
+			<input type="hidden" name="<?php echo esc_attr( self::OPTION_LOGIN_IMAGE_ID ); ?>" value="<?php echo esc_attr( $image_id ); ?>" data-cadv-login-image-id />
+			<div data-cadv-login-image-preview<?php echo $image_url ? '' : ' hidden'; ?> style="margin-bottom:12px;">
+				<img<?php if ( $image_url ) : ?> src="<?php echo esc_url( $image_url ); ?>"<?php endif; ?> alt="" style="display:block;height:auto;max-height:220px;max-width:360px;width:auto;" />
+			</div>
+			<button type="button" class="button" data-cadv-login-image-select><?php echo $image_id ? esc_html__( 'Cambiar imagen', 'cadv-woo-functionalities' ) : esc_html__( 'Seleccionar imagen', 'cadv-woo-functionalities' ); ?></button>
+			<button type="button" class="button-link-delete" data-cadv-login-image-remove<?php echo $image_id ? '' : ' hidden'; ?> style="margin-left:10px;"><?php esc_html_e( 'Quitar imagen', 'cadv-woo-functionalities' ); ?></button>
+		</div>
+		<p class="description"><?php esc_html_e( 'Se recomienda una imagen vertical o cuadrada de al menos 1200 px. Si no eliges una, se usa la composicion incluida en el plugin.', 'cadv-woo-functionalities' ); ?></p>
+		<?php
 	}
 
 	/**
@@ -1437,6 +1510,16 @@ final class CADV_Woo_Functionalities {
 
 		if ( '' !== $image ) {
 			$image = 0 === strpos( $image, '/' ) ? home_url( $image ) : esc_url_raw( $image );
+
+			if ( $image ) {
+				return $image;
+			}
+		}
+
+		$image_id = absint( get_option( self::OPTION_LOGIN_IMAGE_ID, 0 ) );
+
+		if ( $image_id ) {
+			$image = wp_get_attachment_image_url( $image_id, 'full' );
 
 			if ( $image ) {
 				return $image;

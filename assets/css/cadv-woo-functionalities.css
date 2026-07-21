@@ -593,9 +593,9 @@
 
 .cesarandev-wf-auth__inner {
 	box-sizing: border-box;
-	margin: 0 auto;
-	max-width: 570px;
-	padding: 58px clamp(34px, 6vw, 86px);
+	margin: 0;
+	max-width: none;
+	padding: 58px clamp(30px, 4vw, 64px);
 	width: 100%;
 }
 
