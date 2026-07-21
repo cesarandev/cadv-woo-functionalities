@@ -371,7 +371,37 @@
 		openModal(getModalFromTarget(window.location.hash));
 	}
 
+	function initAccountPasswordToggles() {
+		document.addEventListener('click', function (event) {
+			var toggle = event.target.closest('[data-cadv-password-toggle]');
+			var wrapper;
+			var input;
+
+			if (!toggle) {
+				return;
+			}
+
+			wrapper = toggle.closest('.cesarandev-wf-auth__password');
+			input = wrapper ? wrapper.querySelector('[data-cadv-password-input]') : null;
+
+			if (!input) {
+				return;
+			}
+
+			if (input.type === 'password') {
+				input.type = 'text';
+				toggle.classList.add('is-visible');
+				toggle.setAttribute('aria-label', toggle.getAttribute('data-hide-label') || 'Ocultar contraseña');
+			} else {
+				input.type = 'password';
+				toggle.classList.remove('is-visible');
+				toggle.setAttribute('aria-label', toggle.getAttribute('data-show-label') || 'Mostrar contraseña');
+			}
+		});
+	}
+
 	initTechnicalSheetModal();
 	initCtaModals();
 	initCtaForms();
+	initAccountPasswordToggles();
 }());

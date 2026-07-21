@@ -29,6 +29,9 @@ final class CADV_Woo_Functionalities {
 	const PUBLIC_RATE_LIMIT_WINDOW = HOUR_IN_SECONDS;
 	const TECHNICAL_RATE_LIMIT     = 10;
 	const CTA_RATE_LIMIT           = 20;
+	const LOGIN_RATE_LIMIT         = 10;
+	const PASSWORD_RECOVERY_LIMIT  = 5;
+	const PASSWORD_RESET_LIMIT     = 10;
 	const CAPTCHA_MAX_AGE          = 12 * HOUR_IN_SECONDS;
 	const MAX_LEAD_INTERACTIONS    = 50;
 
@@ -83,11 +86,13 @@ final class CADV_Woo_Functionalities {
 		add_action( 'admin_init', array( $this, 'maybe_migrate_settings' ), 5 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'wp', array( $this, 'replace_single_add_to_cart' ) );
+		add_action( 'template_redirect', array( $this, 'prepare_custom_password_reset_link' ), 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_' . self::AJAX_ACTION, array( $this, 'handle_technical_sheet_request' ) );
 		add_action( 'wp_ajax_nopriv_' . self::AJAX_ACTION, array( $this, 'handle_technical_sheet_request' ) );
 		add_action( 'wp_ajax_' . self::CTA_ACTION, array( $this, 'handle_cta_submission' ) );
 		add_action( 'wp_ajax_nopriv_' . self::CTA_ACTION, array( $this, 'handle_cta_submission' ) );
+		add_action( 'wp_loaded', array( $this, 'handle_customer_account_auth_actions' ), 15 );
 		add_action( 'admin_post_' . self::EXPORT_ACTION, array( $this, 'export_requests_csv' ) );
 		add_action( 'admin_post_' . self::CRM_UPDATE_ACTION, array( $this, 'handle_crm_update' ) );
 		add_action( 'admin_post_' . self::CRM_LEAD_UPDATE_ACTION, array( $this, 'handle_crm_lead_update' ) );
@@ -100,6 +105,7 @@ final class CADV_Woo_Functionalities {
 		add_shortcode( 'cesarandev_whatsapp', array( $this, 'render_whatsapp_shortcode' ) );
 		add_shortcode( 'cadv_mi_espacio', array( $this, 'render_my_space_shortcode' ) );
 		add_shortcode( 'cadv_mi_cuenta', array( $this, 'render_my_account_shortcode' ) );
+		add_filter( 'woocommerce_get_endpoint_url', array( $this, 'filter_customer_lost_password_url' ), 20, 4 );
 		add_filter( 'plugin_action_links_' . plugin_basename( CADV_WOO_FUNCTIONALITIES_FILE ), array( $this, 'add_plugin_action_links' ) );
 		add_action( 'admin_notices', array( $this, 'render_woocommerce_notice' ) );
 		add_filter( 'woocommerce_account_menu_items', array( $this, 'filter_restricted_account_menu' ), 20 );
@@ -1119,32 +1125,33 @@ final class CADV_Woo_Functionalities {
 	 *
 	 * Usage: [cadv_mi_cuenta]
 	 *
+	 * @param array $atts Shortcode attributes.
 	 * @return string
 	 */
-	public function render_my_account_shortcode() {
+	public function render_my_account_shortcode( $atts = array() ) {
 		if ( ! $this->is_woocommerce_active() ) {
 			return '';
 		}
 
+		$atts = shortcode_atts(
+			array(
+				'login_image'       => '',
+				'login_image_id'    => 0,
+				'login_image_alt'   => __( 'Cultivos y soluciones para el campo', 'cadv-woo-functionalities' ),
+				'login_image_title' => __( 'Tu informacion, siempre disponible', 'cadv-woo-functionalities' ),
+				'login_image_text'  => __( 'Consulta tus datos y fichas tecnicas desde un solo lugar.', 'cadv-woo-functionalities' ),
+			),
+			$atts,
+			'cadv_mi_cuenta'
+		);
+
 		$this->enqueue_frontend_assets();
-		ob_start();
 
 		if ( ! is_user_logged_in() ) {
-			?>
-			<section class="cesarandev-wf-my-account cesarandev-wf-my-account--login">
-				<h2><?php esc_html_e( 'Mi espacio', 'cadv-woo-functionalities' ); ?></h2>
-				<p><?php esc_html_e( 'Inicia sesion para consultar tus datos y fichas tecnicas.', 'cadv-woo-functionalities' ); ?></p>
-				<?php
-				woocommerce_login_form(
-					array(
-						'redirect' => $this->get_my_account_url(),
-					)
-				);
-				?>
-			</section>
-			<?php
-			return ob_get_clean();
+			return $this->render_customer_account_auth_layout( $atts );
 		}
+
+		ob_start();
 
 		$user_id        = get_current_user_id();
 		$user           = get_userdata( $user_id );
@@ -1193,6 +1200,339 @@ final class CADV_Woo_Functionalities {
 		<?php
 
 		return ob_get_clean();
+	}
+
+	/**
+	 * Render the complete authentication experience inside the customer area.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	private function render_customer_account_auth_layout( array $atts ) {
+		$image         = $this->get_customer_account_login_image( $atts );
+		$action        = $this->get_customer_account_auth_action();
+		$is_default    = ( CADV_WOO_FUNCTIONALITIES_URL . 'assets/images/marketplace-grain-texture.jpg' ) === $image;
+		$image_title   = sanitize_text_field( $atts['login_image_title'] );
+		$image_text    = sanitize_text_field( $atts['login_image_text'] );
+		$image_alt     = sanitize_text_field( $atts['login_image_alt'] );
+		$reset_key     = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Password reset link state.
+		$reset_login   = isset( $_GET['login'] ) ? sanitize_user( wp_unslash( $_GET['login'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Password reset link state.
+		$reset_user    = ( $reset_key && $reset_login ) ? check_password_reset_key( $reset_key, $reset_login ) : false;
+		$reset_url     = add_query_arg(
+			array(
+				'key'   => $reset_key,
+				'login' => $reset_login,
+			),
+			$this->get_my_account_auth_url( 'restablecer' )
+		);
+
+		if ( $reset_key && $reset_login ) {
+			$action = 'restablecer';
+		}
+
+		ob_start();
+		?>
+		<section class="cesarandev-wf-my-account cesarandev-wf-my-account--login">
+			<div class="cesarandev-wf-auth">
+				<div class="cesarandev-wf-auth__panel">
+					<div class="cesarandev-wf-auth__inner">
+						<?php if ( function_exists( 'wc_print_notices' ) ) : ?>
+							<?php wc_print_notices(); ?>
+						<?php endif; ?>
+
+						<?php if ( 'enlace-enviado' === $action ) : ?>
+							<div class="cesarandev-wf-auth__status-icon" aria-hidden="true">
+								<svg viewBox="0 0 24 24" focusable="false"><path d="m9.55 18.2-5.7-5.7 1.9-1.9 3.8 3.8 8.7-8.7 1.9 1.9-10.6 10.6Z"/></svg>
+							</div>
+							<span class="cesarandev-wf-auth__eyebrow"><?php esc_html_e( 'Revisa tu correo', 'cadv-woo-functionalities' ); ?></span>
+							<h2><?php esc_html_e( 'Enlace enviado', 'cadv-woo-functionalities' ); ?></h2>
+							<p><?php esc_html_e( 'Si existe una cuenta asociada, recibiras un correo con el enlace para crear una nueva contraseña. Puede tardar algunos minutos.', 'cadv-woo-functionalities' ); ?></p>
+							<a class="cesarandev-wf-auth__button" href="<?php echo esc_url( $this->get_my_account_url() ); ?>"><?php esc_html_e( 'Volver a iniciar sesion', 'cadv-woo-functionalities' ); ?></a>
+						<?php elseif ( 'restablecer' === $action ) : ?>
+							<span class="cesarandev-wf-auth__eyebrow"><?php esc_html_e( 'Seguridad de la cuenta', 'cadv-woo-functionalities' ); ?></span>
+							<h2><?php esc_html_e( 'Crea una nueva contraseña', 'cadv-woo-functionalities' ); ?></h2>
+							<?php if ( $reset_user instanceof WP_User ) : ?>
+								<p><?php esc_html_e( 'Usa una contraseña segura que no hayas utilizado anteriormente.', 'cadv-woo-functionalities' ); ?></p>
+								<form class="cesarandev-wf-auth__form" method="post" action="<?php echo esc_url( $reset_url ); ?>">
+									<label for="cadv-password-1"><?php esc_html_e( 'Nueva contraseña', 'cadv-woo-functionalities' ); ?><span aria-hidden="true">*</span></label>
+									<div class="cesarandev-wf-auth__password">
+									<input type="password" name="password_1" id="cadv-password-1" autocomplete="new-password" minlength="12" maxlength="4096" required aria-required="true" data-cadv-password-input />
+										<button type="button" data-cadv-password-toggle data-show-label="<?php esc_attr_e( 'Mostrar contraseña', 'cadv-woo-functionalities' ); ?>" data-hide-label="<?php esc_attr_e( 'Ocultar contraseña', 'cadv-woo-functionalities' ); ?>" aria-label="<?php esc_attr_e( 'Mostrar contraseña', 'cadv-woo-functionalities' ); ?>"><span aria-hidden="true"></span></button>
+									</div>
+									<label for="cadv-password-2"><?php esc_html_e( 'Confirma la nueva contraseña', 'cadv-woo-functionalities' ); ?><span aria-hidden="true">*</span></label>
+									<div class="cesarandev-wf-auth__password">
+									<input type="password" name="password_2" id="cadv-password-2" autocomplete="new-password" minlength="12" maxlength="4096" required aria-required="true" data-cadv-password-input />
+										<button type="button" data-cadv-password-toggle data-show-label="<?php esc_attr_e( 'Mostrar contraseña', 'cadv-woo-functionalities' ); ?>" data-hide-label="<?php esc_attr_e( 'Ocultar contraseña', 'cadv-woo-functionalities' ); ?>" aria-label="<?php esc_attr_e( 'Mostrar contraseña', 'cadv-woo-functionalities' ); ?>"><span aria-hidden="true"></span></button>
+									</div>
+								<input type="hidden" name="reset_key" value="<?php echo esc_attr( $reset_key ); ?>" />
+								<input type="hidden" name="reset_login" value="<?php echo esc_attr( $reset_login ); ?>" />
+								<?php $this->render_public_captcha_fields( 'password_reset' ); ?>
+								<input type="hidden" name="cadv_account_reset_password" value="1" />
+									<?php wp_nonce_field( 'cadv_account_reset_password', 'cadv-account-reset-password-nonce' ); ?>
+									<button class="cesarandev-wf-auth__button" type="submit"><?php esc_html_e( 'Guardar contraseña', 'cadv-woo-functionalities' ); ?></button>
+								</form>
+							<?php else : ?>
+								<div class="cesarandev-wf-auth__alert" role="alert"><?php esc_html_e( 'Este enlace no es valido o ya vencio. Solicita uno nuevo para continuar.', 'cadv-woo-functionalities' ); ?></div>
+								<a class="cesarandev-wf-auth__button" href="<?php echo esc_url( $this->get_my_account_auth_url( 'recuperar' ) ); ?>"><?php esc_html_e( 'Solicitar otro enlace', 'cadv-woo-functionalities' ); ?></a>
+							<?php endif; ?>
+						<?php elseif ( 'recuperar' === $action ) : ?>
+							<span class="cesarandev-wf-auth__eyebrow"><?php esc_html_e( 'Recuperar acceso', 'cadv-woo-functionalities' ); ?></span>
+							<h2><?php esc_html_e( '¿Olvidaste tu contraseña?', 'cadv-woo-functionalities' ); ?></h2>
+							<p><?php esc_html_e( 'Escribe tu usuario o correo electronico. Te enviaremos un enlace para crear una nueva contraseña.', 'cadv-woo-functionalities' ); ?></p>
+							<form class="cesarandev-wf-auth__form" method="post" action="<?php echo esc_url( $this->get_my_account_auth_url( 'recuperar' ) ); ?>">
+								<label for="cadv-user-login"><?php esc_html_e( 'Usuario o correo electronico', 'cadv-woo-functionalities' ); ?><span aria-hidden="true">*</span></label>
+							<input type="text" name="user_login" id="cadv-user-login" autocomplete="username" maxlength="254" required aria-required="true" />
+							<?php $this->render_public_captcha_fields( 'password_recovery' ); ?>
+								<input type="hidden" name="cadv_account_lost_password" value="1" />
+								<?php wp_nonce_field( 'cadv_account_lost_password', 'cadv-account-lost-password-nonce' ); ?>
+								<button class="cesarandev-wf-auth__button" type="submit"><?php esc_html_e( 'Enviar enlace', 'cadv-woo-functionalities' ); ?></button>
+							</form>
+							<a class="cesarandev-wf-auth__back" href="<?php echo esc_url( $this->get_my_account_url() ); ?>"><span aria-hidden="true">&larr;</span><?php esc_html_e( 'Volver al inicio de sesion', 'cadv-woo-functionalities' ); ?></a>
+						<?php else : ?>
+							<span class="cesarandev-wf-auth__eyebrow"><?php esc_html_e( 'Portal de clientes', 'cadv-woo-functionalities' ); ?></span>
+							<h2><?php esc_html_e( 'Mi espacio', 'cadv-woo-functionalities' ); ?></h2>
+							<p><?php esc_html_e( 'Inicia sesion para consultar tus datos y fichas tecnicas.', 'cadv-woo-functionalities' ); ?></p>
+							<form class="cesarandev-wf-auth__form" method="post" action="<?php echo esc_url( $this->get_my_account_url() ); ?>">
+								<label for="cadv-username"><?php esc_html_e( 'Usuario o correo electronico', 'cadv-woo-functionalities' ); ?><span aria-hidden="true">*</span></label>
+							<input type="text" name="username" id="cadv-username" autocomplete="username" maxlength="254" required aria-required="true" />
+								<label for="cadv-password"><?php esc_html_e( 'Contraseña', 'cadv-woo-functionalities' ); ?><span aria-hidden="true">*</span></label>
+								<div class="cesarandev-wf-auth__password">
+								<input type="password" name="password" id="cadv-password" autocomplete="current-password" maxlength="4096" required aria-required="true" data-cadv-password-input />
+									<button type="button" data-cadv-password-toggle data-show-label="<?php esc_attr_e( 'Mostrar contraseña', 'cadv-woo-functionalities' ); ?>" data-hide-label="<?php esc_attr_e( 'Ocultar contraseña', 'cadv-woo-functionalities' ); ?>" aria-label="<?php esc_attr_e( 'Mostrar contraseña', 'cadv-woo-functionalities' ); ?>"><span aria-hidden="true"></span></button>
+								</div>
+							<div class="cesarandev-wf-auth__options">
+									<label class="cesarandev-wf-auth__remember"><input type="checkbox" name="rememberme" value="forever" /><span><?php esc_html_e( 'Recordarme', 'cadv-woo-functionalities' ); ?></span></label>
+									<a href="<?php echo esc_url( $this->get_my_account_auth_url( 'recuperar' ) ); ?>"><?php esc_html_e( '¿Olvidaste tu contraseña?', 'cadv-woo-functionalities' ); ?></a>
+							</div>
+							<?php $this->render_public_captcha_fields( 'login' ); ?>
+							<input type="hidden" name="redirect" value="<?php echo esc_url( $this->get_my_account_url() ); ?>" />
+								<?php wp_nonce_field( 'woocommerce-login', 'woocommerce-login-nonce' ); ?>
+								<button class="cesarandev-wf-auth__button" type="submit" name="login" value="<?php esc_attr_e( 'Iniciar sesión', 'cadv-woo-functionalities' ); ?>"><?php esc_html_e( 'Iniciar sesión', 'cadv-woo-functionalities' ); ?></button>
+							</form>
+						<?php endif; ?>
+					</div>
+				</div>
+
+				<aside class="cesarandev-wf-auth__visual<?php echo $is_default ? ' is-default' : ''; ?>">
+					<img class="cesarandev-wf-auth__image" src="<?php echo esc_url( $image ); ?>" alt="<?php echo esc_attr( $image_alt ); ?>" />
+					<?php if ( $is_default ) : ?>
+						<img class="cesarandev-wf-auth__foliage" src="<?php echo esc_url( CADV_WOO_FUNCTIONALITIES_URL . 'assets/images/marketplace-soil-foliage.webp' ); ?>" alt="" aria-hidden="true" />
+					<?php endif; ?>
+					<?php if ( $image_title || $image_text ) : ?>
+						<div class="cesarandev-wf-auth__visual-copy">
+							<?php if ( $image_title ) : ?><strong><?php echo esc_html( $image_title ); ?></strong><?php endif; ?>
+							<?php if ( $image_text ) : ?><span><?php echo esc_html( $image_text ); ?></span><?php endif; ?>
+						</div>
+					<?php endif; ?>
+				</aside>
+			</div>
+		</section>
+		<?php
+
+		return ob_get_clean();
+	}
+
+	/**
+	 * Resolve the image configured for the authentication panel.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string
+	 */
+	private function get_customer_account_login_image( array $atts ) {
+		$image_id = absint( $atts['login_image_id'] );
+
+		if ( $image_id ) {
+			$image = wp_get_attachment_image_url( $image_id, 'full' );
+
+			if ( $image ) {
+				return $image;
+			}
+		}
+
+		$image = trim( (string) $atts['login_image'] );
+
+		if ( '' !== $image ) {
+			$image = 0 === strpos( $image, '/' ) ? home_url( $image ) : esc_url_raw( $image );
+
+			if ( $image ) {
+				return $image;
+			}
+		}
+
+		return CADV_WOO_FUNCTIONALITIES_URL . 'assets/images/marketplace-grain-texture.jpg';
+	}
+
+	/**
+	 * Get the requested authentication screen.
+	 *
+	 * @return string
+	 */
+	private function get_customer_account_auth_action() {
+		$action  = isset( $_GET['accion'] ) ? sanitize_key( wp_unslash( $_GET['accion'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation state.
+		$allowed = array( 'recuperar', 'restablecer', 'enlace-enviado' );
+
+		return in_array( $action, $allowed, true ) ? $action : 'login';
+	}
+
+	/**
+	 * Build a URL for an authentication screen inside the customer area.
+	 *
+	 * @param string $action Authentication action.
+	 * @return string
+	 */
+	private function get_my_account_auth_url( $action ) {
+		return add_query_arg( 'accion', sanitize_key( $action ), $this->get_my_account_url() );
+	}
+
+	/**
+	 * Keep WooCommerce lost-password links inside the custom customer endpoint.
+	 *
+	 * @param string $url       Generated endpoint URL.
+	 * @param string $endpoint  Endpoint name.
+	 * @param string $value     Endpoint value.
+	 * @param string $permalink Base permalink.
+	 * @return string
+	 */
+	public function filter_customer_lost_password_url( $url, $endpoint, $value, $permalink ) {
+		unset( $value, $permalink );
+
+		return 'lost-password' === $endpoint ? $this->get_my_account_auth_url( 'recuperar' ) : $url;
+	}
+
+	/**
+	 * Prevent WooCommerce from moving custom reset links to its native endpoint.
+	 */
+	public function prepare_custom_password_reset_link() {
+		if ( ! isset( $_GET['key'], $_GET['login'] ) || ! class_exists( 'WC_Form_Handler' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Signed password reset URL.
+			return;
+		}
+
+		$account_path = wp_parse_url( $this->get_my_account_url(), PHP_URL_PATH );
+		$request_path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Compared only as a URL path.
+
+		if ( untrailingslashit( (string) $account_path ) === untrailingslashit( (string) $request_path ) ) {
+			remove_action( 'template_redirect', array( 'WC_Form_Handler', 'redirect_reset_password_link' ), 10 );
+		}
+	}
+
+	/**
+	 * Handle password recovery and reset forms from the custom customer area.
+	 */
+	public function handle_customer_account_auth_actions() {
+		if ( is_user_logged_in() || ! $this->is_woocommerce_active() || ! class_exists( 'WC_Shortcode_My_Account' ) ) {
+			return;
+		}
+
+		if ( isset( $_POST['login'], $_POST['username'], $_POST['password'] ) ) {
+			$nonce = isset( $_POST['woocommerce-login-nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['woocommerce-login-nonce'] ) ) : '';
+
+			if ( ! wp_verify_nonce( $nonce, 'woocommerce-login' ) ) {
+				unset( $_POST['login'] );
+				wc_add_notice( __( 'La solicitud vencio. Recarga la pagina e intentalo nuevamente.', 'cadv-woo-functionalities' ), 'error' );
+				return;
+			}
+
+			$security = $this->validate_public_submission( 'login', self::LOGIN_RATE_LIMIT );
+
+			if ( is_wp_error( $security ) ) {
+				unset( $_POST['login'] );
+				wc_add_notice( $security->get_error_message(), 'error' );
+				return;
+			}
+
+			$username = is_string( $_POST['username'] ) ? wp_unslash( $_POST['username'] ) : '';
+			$password = is_string( $_POST['password'] ) ? $_POST['password'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Password must remain unchanged.
+
+			if ( $this->get_text_length( $username ) > 254 || $this->get_text_length( $password ) > 4096 ) {
+				unset( $_POST['login'] );
+				wc_add_notice( __( 'Los datos de acceso superan la longitud permitida.', 'cadv-woo-functionalities' ), 'error' );
+				return;
+			}
+		}
+
+		if ( isset( $_POST['cadv_account_lost_password'] ) ) {
+			$nonce = isset( $_POST['cadv-account-lost-password-nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['cadv-account-lost-password-nonce'] ) ) : '';
+
+			if ( ! wp_verify_nonce( $nonce, 'cadv_account_lost_password' ) ) {
+				wc_add_notice( __( 'La solicitud vencio. Recarga la pagina e intentalo nuevamente.', 'cadv-woo-functionalities' ), 'error' );
+				return;
+			}
+
+			$security = $this->validate_public_submission( 'password_recovery', self::PASSWORD_RECOVERY_LIMIT );
+
+			if ( is_wp_error( $security ) ) {
+				wc_add_notice( $security->get_error_message(), 'error' );
+				return;
+			}
+
+			$user_login = isset( $_POST['user_login'] ) && is_string( $_POST['user_login'] ) ? wp_unslash( $_POST['user_login'] ) : '';
+
+			if ( $this->get_text_length( $user_login ) > 254 ) {
+				wc_add_notice( __( 'El usuario o correo supera la longitud permitida.', 'cadv-woo-functionalities' ), 'error' );
+				return;
+			}
+
+			WC_Shortcode_My_Account::retrieve_password();
+
+			// Always show the same result to avoid revealing whether an account exists.
+			wc_clear_notices();
+			wp_safe_redirect( $this->get_my_account_auth_url( 'enlace-enviado' ) );
+			exit;
+		}
+
+		if ( ! isset( $_POST['cadv_account_reset_password'] ) ) {
+			return;
+		}
+
+		$nonce = isset( $_POST['cadv-account-reset-password-nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['cadv-account-reset-password-nonce'] ) ) : '';
+
+		if ( ! wp_verify_nonce( $nonce, 'cadv_account_reset_password' ) ) {
+			wc_add_notice( __( 'La solicitud vencio. Abre nuevamente el enlace de recuperacion.', 'cadv-woo-functionalities' ), 'error' );
+			return;
+		}
+
+		$security = $this->validate_public_submission( 'password_reset', self::PASSWORD_RESET_LIMIT );
+
+		if ( is_wp_error( $security ) ) {
+			wc_add_notice( $security->get_error_message(), 'error' );
+			return;
+		}
+
+		$reset_key   = isset( $_POST['reset_key'] ) ? sanitize_text_field( wp_unslash( $_POST['reset_key'] ) ) : '';
+		$reset_login = isset( $_POST['reset_login'] ) ? sanitize_user( wp_unslash( $_POST['reset_login'] ) ) : '';
+		$password_1  = isset( $_POST['password_1'] ) ? $_POST['password_1'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Password must remain unchanged.
+		$password_2  = isset( $_POST['password_2'] ) ? $_POST['password_2'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Password must remain unchanged.
+		$user        = WC_Shortcode_My_Account::check_password_reset_key( $reset_key, $reset_login );
+
+		if ( ! $user instanceof WP_User ) {
+			return;
+		}
+
+		if ( '' === $password_1 ) {
+			wc_add_notice( __( 'Escribe una nueva contraseña.', 'cadv-woo-functionalities' ), 'error' );
+		}
+
+		if ( $this->get_text_length( $password_1 ) < 12 || $this->get_text_length( $password_1 ) > 4096 ) {
+			wc_add_notice( __( 'La nueva contraseña debe tener entre 12 y 4096 caracteres.', 'cadv-woo-functionalities' ), 'error' );
+		}
+
+		if ( $password_1 !== $password_2 ) {
+			wc_add_notice( __( 'Las contraseñas no coinciden.', 'cadv-woo-functionalities' ), 'error' );
+		}
+
+		$errors = new WP_Error();
+		do_action( 'validate_password_reset', $errors, $user );
+		wc_add_wp_error_notices( $errors );
+
+		if ( 0 < wc_notice_count( 'error' ) ) {
+			return;
+		}
+
+		WC_Shortcode_My_Account::reset_password( $user, $password_1 );
+		do_action( 'woocommerce_customer_reset_password', $user );
+		wc_add_notice( __( 'Tu contraseña fue actualizada correctamente.', 'cadv-woo-functionalities' ), 'success' );
+		wp_safe_redirect( $this->get_my_account_url() );
+		exit;
 	}
 
 	/**
@@ -2325,7 +2665,7 @@ final class CADV_Woo_Functionalities {
 				continue;
 			}
 
-			$value_length = function_exists( 'mb_strlen' ) ? mb_strlen( (string) $data[ $field ], 'UTF-8' ) : strlen( (string) $data[ $field ] );
+			$value_length = $this->get_text_length( $data[ $field ] );
 
 			if ( $value_length > $maximum ) {
 				return new WP_Error( 'cesarandev_wf_field_too_long', __( 'Uno de los campos supera la longitud permitida.', 'cadv-woo-functionalities' ) );
@@ -2333,6 +2673,16 @@ final class CADV_Woo_Functionalities {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Get a UTF-8-safe text length with a portable fallback.
+	 *
+	 * @param mixed $value Text value.
+	 * @return int
+	 */
+	private function get_text_length( $value ) {
+		return function_exists( 'mb_strlen' ) ? mb_strlen( (string) $value, 'UTF-8' ) : strlen( (string) $value );
 	}
 
 	/**

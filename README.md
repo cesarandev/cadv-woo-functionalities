@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.46" src="https://img.shields.io/badge/versión-1.1.46-315c27?style=flat-square">
+  <img alt="Versión 1.1.47" src="https://img.shields.io/badge/versión-1.1.47-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -491,6 +491,16 @@ Los shortcodes de producto aceptan `product_id="123"`. Si el atributo se omite, 
 
 `[cadv_mi_espacio]` admite `label="Mi espacio"`, `login_label="Iniciar sesión"` y `url="/micuenta/"`. Con la sesión iniciada, el texto se presenta como popover al pasar el cursor o enfocar el icono; sin sesión, se muestra un botón de acceso. Para crear el área del cliente, publica una página con slug `micuenta` e inserta `[cadv_mi_cuenta]`; los visitantes verán el formulario de acceso de WooCommerce y los usuarios autenticados verán un menú modular con la información capturada por el plugin.
 
+El acceso de `[cadv_mi_cuenta]` ocupa el ancho completo y mantiene dentro de `/micuenta/` el inicio de sesión, la solicitud de recuperación y el formulario para definir la nueva contraseña. La columna visual derecha usa una composición agrícola incluida por defecto y puede personalizarse con estos atributos:
+
+```text
+[cadv_mi_cuenta login_image_id="123" login_image_alt="Cultivo de maíz" login_image_title="Soluciones para tu cultivo" login_image_text="Consulta tus documentos y datos comerciales."]
+```
+
+También se admite `login_image="https://dominio.com/imagen.jpg"` o una ruta local como `login_image="/wp-content/uploads/imagen.jpg"`. En tablet el formulario y la imagen conservan las dos columnas; en móvil se apilan para mantener campos, botones y textos legibles.
+
+Los formularios de acceso, recuperación y restablecimiento incluyen CAPTCHA firmado, honeypot y límites por IP. Las contraseñas nuevas deben tener al menos 12 caracteres.
+
 Nuevas secciones pueden registrarse sin modificar el shortcode mediante el filtro `cadv_woo_functionalities_account_modules`. Cada módulo se identifica por su slug y define `label`, `icon` y un `callback` invocable; opcionalmente puede incluir `capability` para limitar su acceso. El callback recibe el ID del usuario, el slug y la configuración completa del módulo. También están disponibles las acciones `cadv_woo_functionalities_before_account_module` y `cadv_woo_functionalities_after_account_module` para integrar contenido alrededor del módulo activo.
 
 ## Importación y exportación de productos
@@ -648,7 +658,7 @@ Los pedidos de fichas se crean con `created_via = cesarandev_technical_sheet_req
 ## Seguridad y privacidad
 
 - Los formularios AJAX verifican nonces de WordPress.
-- Los formularios públicos de ficha técnica y CTA exigen CAPTCHA firmado, usan un honeypot y limitan por IP incluso los intentos fallidos.
+- Los formularios públicos de ficha técnica, CTA y autenticación exigen CAPTCHA firmado, usan un honeypot y limitan por IP incluso los intentos fallidos.
 - La búsqueda AJAX del marketplace aplica límite por IP, límites de longitud y resultados acotados.
 - Los formularios administrativos requieren `manage_woocommerce` y nonces específicos.
 - IDs, correos, URLs, textos y colores se sanitizan antes de usarse.
