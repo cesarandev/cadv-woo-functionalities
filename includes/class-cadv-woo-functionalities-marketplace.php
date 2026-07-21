@@ -215,7 +215,9 @@ final class CADV_Woo_Functionalities_Marketplace {
 			wp_send_json_error( array( 'message' => __( 'WooCommerce no esta activo.', 'cadv-woo-functionalities' ) ), 400 );
 		}
 
-		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
+		if ( ! isset( $_REQUEST['nonce'] ) || ! is_string( $_REQUEST['nonce'] ) || ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'La solicitud no es valida. Recarga la pagina e intentalo de nuevo.', 'cadv-woo-functionalities' ) ), 403 );
+		}
 
 		if ( ! $this->consume_ajax_rate_limit() ) {
 			wp_send_json_error( array( 'message' => __( 'Demasiadas solicitudes de busqueda. Intentalo de nuevo en un minuto.', 'cadv-woo-functionalities' ) ), 429 );
@@ -657,11 +659,11 @@ final class CADV_Woo_Functionalities_Marketplace {
 	 */
 	private function get_request_filters() {
 		return array(
-			'category' => isset( $_POST['category'] ) ? absint( $_POST['category'] ) : 0,
-			'search'   => isset( $_POST['search'] ) ? $this->sanitize_search_value( wp_unslash( $_POST['search'] ) ) : '',
-			'has_ica'  => isset( $_POST['has_ica'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['has_ica'] ) ),
-			'page'     => isset( $_POST['page'] ) ? min( 1000, max( 1, absint( $_POST['page'] ) ) ) : 1,
-			'per_page' => isset( $_POST['per_page'] ) ? $this->sanitize_per_page( $_POST['per_page'] ) : self::DEFAULT_PER_PAGE,
+			'category' => isset( $_POST['category'] ) && is_string( $_POST['category'] ) ? absint( $_POST['category'] ) : 0,
+			'search'   => isset( $_POST['search'] ) && is_string( $_POST['search'] ) ? $this->sanitize_search_value( wp_unslash( $_POST['search'] ) ) : '',
+			'has_ica'  => isset( $_POST['has_ica'] ) && is_string( $_POST['has_ica'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['has_ica'] ) ),
+			'page'     => isset( $_POST['page'] ) && is_string( $_POST['page'] ) ? min( 1000, max( 1, absint( $_POST['page'] ) ) ) : 1,
+			'per_page' => isset( $_POST['per_page'] ) && is_string( $_POST['per_page'] ) ? $this->sanitize_per_page( $_POST['per_page'] ) : self::DEFAULT_PER_PAGE,
 		);
 	}
 

@@ -1215,8 +1215,8 @@ final class CADV_Woo_Functionalities {
 		$image_title   = sanitize_text_field( $atts['login_image_title'] );
 		$image_text    = sanitize_text_field( $atts['login_image_text'] );
 		$image_alt     = sanitize_text_field( $atts['login_image_alt'] );
-		$reset_key     = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Password reset link state.
-		$reset_login   = isset( $_GET['login'] ) ? sanitize_user( wp_unslash( $_GET['login'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Password reset link state.
+		$reset_key     = isset( $_GET['key'] ) && is_string( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Password reset link state.
+		$reset_login   = isset( $_GET['login'] ) && is_string( $_GET['login'] ) ? sanitize_user( wp_unslash( $_GET['login'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Password reset link state.
 		$reset_user    = ( $reset_key && $reset_login ) ? check_password_reset_key( $reset_key, $reset_login ) : false;
 		$reset_url     = add_query_arg(
 			array(
@@ -1368,7 +1368,7 @@ final class CADV_Woo_Functionalities {
 	 * @return string
 	 */
 	private function get_customer_account_auth_action() {
-		$action  = isset( $_GET['accion'] ) ? sanitize_key( wp_unslash( $_GET['accion'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation state.
+		$action  = isset( $_GET['accion'] ) && is_string( $_GET['accion'] ) ? sanitize_key( wp_unslash( $_GET['accion'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation state.
 		$allowed = array( 'recuperar', 'restablecer', 'enlace-enviado' );
 
 		return in_array( $action, $allowed, true ) ? $action : 'login';
@@ -1424,7 +1424,7 @@ final class CADV_Woo_Functionalities {
 		}
 
 		if ( isset( $_POST['login'], $_POST['username'], $_POST['password'] ) ) {
-			$nonce = isset( $_POST['woocommerce-login-nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['woocommerce-login-nonce'] ) ) : '';
+			$nonce = sanitize_text_field( $this->get_post_string( 'woocommerce-login-nonce' ) );
 
 			if ( ! wp_verify_nonce( $nonce, 'woocommerce-login' ) ) {
 				unset( $_POST['login'] );
@@ -1443,7 +1443,7 @@ final class CADV_Woo_Functionalities {
 			$username = is_string( $_POST['username'] ) ? wp_unslash( $_POST['username'] ) : '';
 			$password = is_string( $_POST['password'] ) ? $_POST['password'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Password must remain unchanged.
 
-			if ( $this->get_text_length( $username ) > 254 || $this->get_text_length( $password ) > 4096 ) {
+			if ( ! is_string( $_POST['username'] ) || ! is_string( $_POST['password'] ) || $this->get_text_length( $username ) > 254 || $this->get_text_length( $password ) > 4096 ) {
 				unset( $_POST['login'] );
 				wc_add_notice( __( 'Los datos de acceso superan la longitud permitida.', 'cadv-woo-functionalities' ), 'error' );
 				return;
@@ -1451,7 +1451,7 @@ final class CADV_Woo_Functionalities {
 		}
 
 		if ( isset( $_POST['cadv_account_lost_password'] ) ) {
-			$nonce = isset( $_POST['cadv-account-lost-password-nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['cadv-account-lost-password-nonce'] ) ) : '';
+			$nonce = sanitize_text_field( $this->get_post_string( 'cadv-account-lost-password-nonce' ) );
 
 			if ( ! wp_verify_nonce( $nonce, 'cadv_account_lost_password' ) ) {
 				wc_add_notice( __( 'La solicitud vencio. Recarga la pagina e intentalo nuevamente.', 'cadv-woo-functionalities' ), 'error' );
@@ -1465,9 +1465,9 @@ final class CADV_Woo_Functionalities {
 				return;
 			}
 
-			$user_login = isset( $_POST['user_login'] ) && is_string( $_POST['user_login'] ) ? wp_unslash( $_POST['user_login'] ) : '';
+			$user_login = $this->get_post_string( 'user_login' );
 
-			if ( $this->get_text_length( $user_login ) > 254 ) {
+			if ( ! isset( $_POST['user_login'] ) || ! is_string( $_POST['user_login'] ) || $this->get_text_length( $user_login ) > 254 ) {
 				wc_add_notice( __( 'El usuario o correo supera la longitud permitida.', 'cadv-woo-functionalities' ), 'error' );
 				return;
 			}
@@ -1484,7 +1484,7 @@ final class CADV_Woo_Functionalities {
 			return;
 		}
 
-		$nonce = isset( $_POST['cadv-account-reset-password-nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['cadv-account-reset-password-nonce'] ) ) : '';
+		$nonce = sanitize_text_field( $this->get_post_string( 'cadv-account-reset-password-nonce' ) );
 
 		if ( ! wp_verify_nonce( $nonce, 'cadv_account_reset_password' ) ) {
 			wc_add_notice( __( 'La solicitud vencio. Abre nuevamente el enlace de recuperacion.', 'cadv-woo-functionalities' ), 'error' );
@@ -1498,10 +1498,10 @@ final class CADV_Woo_Functionalities {
 			return;
 		}
 
-		$reset_key   = isset( $_POST['reset_key'] ) ? sanitize_text_field( wp_unslash( $_POST['reset_key'] ) ) : '';
-		$reset_login = isset( $_POST['reset_login'] ) ? sanitize_user( wp_unslash( $_POST['reset_login'] ) ) : '';
-		$password_1  = isset( $_POST['password_1'] ) ? $_POST['password_1'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Password must remain unchanged.
-		$password_2  = isset( $_POST['password_2'] ) ? $_POST['password_2'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Password must remain unchanged.
+		$reset_key   = sanitize_text_field( $this->get_post_string( 'reset_key' ) );
+		$reset_login = sanitize_user( $this->get_post_string( 'reset_login' ) );
+		$password_1  = isset( $_POST['password_1'] ) && is_string( $_POST['password_1'] ) ? $_POST['password_1'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Password must remain unchanged.
+		$password_2  = isset( $_POST['password_2'] ) && is_string( $_POST['password_2'] ) ? $_POST['password_2'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Password must remain unchanged.
 		$user        = WC_Shortcode_My_Account::check_password_reset_key( $reset_key, $reset_login );
 
 		if ( ! $user instanceof WP_User ) {
@@ -2566,14 +2566,14 @@ final class CADV_Woo_Functionalities {
 			return $rate_limit;
 		}
 
-		$honeypot = isset( $_POST['website'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['website'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$honeypot = trim( sanitize_text_field( $this->get_post_string( 'website' ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
 		if ( '' !== $honeypot ) {
 			return new WP_Error( 'cesarandev_wf_bot_detected', __( 'No se pudo validar el formulario. Recarga la pagina e intentalo de nuevo.', 'cadv-woo-functionalities' ), 400 );
 		}
 
-		$token  = isset( $_POST['captcha_token'] ) ? sanitize_text_field( wp_unslash( $_POST['captcha_token'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
-		$answer = isset( $_POST['captcha_answer'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['captcha_answer'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$token  = sanitize_text_field( $this->get_post_string( 'captcha_token' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$answer = trim( sanitize_text_field( $this->get_post_string( 'captcha_answer' ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
 		if ( '' === $token || strlen( $token ) > 512 || ! preg_match( '/^[0-9]{1,2}$/', $answer ) ) {
 			return new WP_Error( 'cesarandev_wf_invalid_captcha', __( 'Completa correctamente la verificacion de seguridad.', 'cadv-woo-functionalities' ), 400 );
@@ -2686,6 +2686,16 @@ final class CADV_Woo_Functionalities {
 	}
 
 	/**
+	 * Return a submitted scalar string without allowing array-shaped parameters.
+	 *
+	 * @param string $key POST field name.
+	 * @return string
+	 */
+	private function get_post_string( $key ) {
+		return isset( $_POST[ $key ] ) && is_string( $_POST[ $key ] ) ? wp_unslash( $_POST[ $key ] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+	}
+
+	/**
 	 * Encode binary-safe data for a URL token.
 	 *
 	 * @param string $value Raw value.
@@ -2720,7 +2730,7 @@ final class CADV_Woo_Functionalities {
 			wp_send_json_error( array( 'message' => __( 'WooCommerce no esta activo.', 'cadv-woo-functionalities' ) ), 400 );
 		}
 
-		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+		if ( ! isset( $_REQUEST['nonce'] ) || ! is_string( $_REQUEST['nonce'] ) || ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
 			wp_send_json_error( array( 'message' => __( 'La solicitud no es valida. Recarga la pagina e intentalo de nuevo.', 'cadv-woo-functionalities' ) ), 403 );
 		}
 
@@ -2788,7 +2798,7 @@ final class CADV_Woo_Functionalities {
 	 * Handle public CTA submissions.
 	 */
 	public function handle_cta_submission() {
-		if ( ! check_ajax_referer( self::CTA_NONCE_ACTION, 'nonce', false ) ) {
+		if ( ! isset( $_REQUEST['nonce'] ) || ! is_string( $_REQUEST['nonce'] ) || ! check_ajax_referer( self::CTA_NONCE_ACTION, 'nonce', false ) ) {
 			wp_send_json_error( array( 'message' => __( 'La solicitud no es valida. Recarga la pagina e intentalo de nuevo.', 'cadv-woo-functionalities' ) ), 403 );
 		}
 
@@ -2831,16 +2841,16 @@ final class CADV_Woo_Functionalities {
 	 */
 	private function get_cta_request_data() {
 		$data = array(
-			'cta_type'           => isset( $_POST['cta_type'] ) ? $this->normalize_cta_type( wp_unslash( $_POST['cta_type'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'full_name'          => isset( $_POST['full_name'] ) ? sanitize_text_field( wp_unslash( $_POST['full_name'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'company'            => isset( $_POST['company'] ) ? sanitize_text_field( wp_unslash( $_POST['company'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'position'           => isset( $_POST['position'] ) ? sanitize_text_field( wp_unslash( $_POST['position'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'phone'              => isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'email'              => isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'product_interest'   => isset( $_POST['product_interest'] ) ? sanitize_text_field( wp_unslash( $_POST['product_interest'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'demo_date'          => isset( $_POST['demo_date'] ) ? sanitize_text_field( wp_unslash( $_POST['demo_date'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'crop_type'          => isset( $_POST['crop_type'] ) ? sanitize_text_field( wp_unslash( $_POST['crop_type'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'source_url'         => isset( $_POST['source_url'] ) ? esc_url_raw( wp_unslash( $_POST['source_url'] ) ) : $this->get_current_url(), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'cta_type'           => $this->normalize_cta_type( $this->get_post_string( 'cta_type' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'full_name'          => sanitize_text_field( $this->get_post_string( 'full_name' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'company'            => sanitize_text_field( $this->get_post_string( 'company' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'position'           => sanitize_text_field( $this->get_post_string( 'position' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'phone'              => sanitize_text_field( $this->get_post_string( 'phone' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'email'              => sanitize_email( $this->get_post_string( 'email' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'product_interest'   => sanitize_text_field( $this->get_post_string( 'product_interest' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'demo_date'          => sanitize_text_field( $this->get_post_string( 'demo_date' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'crop_type'          => sanitize_text_field( $this->get_post_string( 'crop_type' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'source_url'         => isset( $_POST['source_url'] ) ? esc_url_raw( $this->get_post_string( 'source_url' ) ) : $this->get_current_url(), // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'privacy_acceptance' => ! empty( $_POST['privacy_acceptance'] ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		);
 
@@ -3075,12 +3085,12 @@ final class CADV_Woo_Functionalities {
 	 */
 	private function get_request_data() {
 		return array(
-			'product_id' => isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'full_name'  => isset( $_POST['full_name'] ) ? sanitize_text_field( wp_unslash( $_POST['full_name'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'company'    => isset( $_POST['company'] ) ? sanitize_text_field( wp_unslash( $_POST['company'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'position'   => isset( $_POST['position'] ) ? sanitize_text_field( wp_unslash( $_POST['position'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'email'      => isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			'phone'      => isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'product_id' => absint( $this->get_post_string( 'product_id' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'full_name'  => sanitize_text_field( $this->get_post_string( 'full_name' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'company'    => sanitize_text_field( $this->get_post_string( 'company' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'position'   => sanitize_text_field( $this->get_post_string( 'position' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'email'      => sanitize_email( $this->get_post_string( 'email' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			'phone'      => sanitize_text_field( $this->get_post_string( 'phone' ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			'privacy_acceptance' => ! empty( $_POST['privacy_acceptance'] ), // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		);
 	}
@@ -4500,7 +4510,7 @@ final class CADV_Woo_Functionalities {
 		}
 
 		$default_redirect = wc_get_account_endpoint_url( 'edit-account' );
-		$redirect_to      = isset( $_POST['redirect_to'] ) ? wp_validate_redirect( esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ), $default_redirect ) : $default_redirect;
+		$redirect_to      = isset( $_POST['redirect_to'] ) ? wp_validate_redirect( esc_url_raw( $this->get_post_string( 'redirect_to' ) ), $default_redirect ) : $default_redirect;
 
 		wp_safe_redirect( $redirect_to );
 		exit;

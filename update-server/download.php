@@ -29,8 +29,8 @@ if ( false === $package_file || false === $packages_dir || 0 !== strpos( $packag
 }
 
 $filename         = basename( $package_file );
-$expires          = isset( $_GET['expires'] ) ? filter_var( $_GET['expires'], FILTER_VALIDATE_INT ) : false;
-$signature        = isset( $_GET['signature'] ) ? strtolower( (string) $_GET['signature'] ) : '';
+$expires          = isset( $_GET['expires'] ) && is_string( $_GET['expires'] ) ? filter_var( $_GET['expires'], FILTER_VALIDATE_INT ) : false;
+$signature        = isset( $_GET['signature'] ) && is_string( $_GET['signature'] ) ? strtolower( $_GET['signature'] ) : '';
 $configured_token = (string) ( $config['download_token'] ?? '' );
 $expected         = false !== $expires && strlen( $configured_token ) >= 32 ? hash_hmac( 'sha256', $expires . '|' . $filename, $configured_token ) : '';
 

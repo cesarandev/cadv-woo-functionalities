@@ -26,8 +26,8 @@ if ( ! is_array( $config ) ) {
 
 $token = get_bearer_token();
 
-if ( '' === $token && isset( $_GET['token'] ) ) {
-	$token = (string) $_GET['token'];
+if ( '' === $token && isset( $_GET['token'] ) && is_string( $_GET['token'] ) ) {
+	$token = $_GET['token'];
 }
 
 $configured_token = (string) ( $config['download_token'] ?? '' );
