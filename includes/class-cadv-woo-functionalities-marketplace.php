@@ -27,6 +27,10 @@ final class CADV_Woo_Functionalities_Marketplace {
 	const DEFAULT_COLUMNS      = 3;
 	const OPTION_PHONE         = 'cadv_woo_functionalities_whatsapp_phone';
 	const OPTION_MESSAGE       = 'cadv_woo_functionalities_message_template';
+	const MAX_SEARCH_LENGTH    = 100;
+	const MAX_SEARCH_KEYWORDS  = 5;
+	const MAX_SEARCH_IDS       = 500;
+	const AJAX_RATE_LIMIT      = 120;
 
 	/**
 	 * Singleton instance.
@@ -212,6 +216,10 @@ final class CADV_Woo_Functionalities_Marketplace {
 		}
 
 		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
+
+		if ( ! $this->consume_ajax_rate_limit() ) {
+			wp_send_json_error( array( 'message' => __( 'Demasiadas solicitudes de busqueda. Intentalo de nuevo en un minuto.', 'cadv-woo-functionalities' ) ), 429 );
+		}
 
 		$filters  = $this->get_request_filters();
 		$response = $this->get_products_response( $filters );
@@ -650,9 +658,9 @@ final class CADV_Woo_Functionalities_Marketplace {
 	private function get_request_filters() {
 		return array(
 			'category' => isset( $_POST['category'] ) ? absint( $_POST['category'] ) : 0,
-			'search'   => isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '',
+			'search'   => isset( $_POST['search'] ) ? $this->sanitize_search_value( wp_unslash( $_POST['search'] ) ) : '',
 			'has_ica'  => isset( $_POST['has_ica'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['has_ica'] ) ),
-			'page'     => isset( $_POST['page'] ) ? max( 1, absint( $_POST['page'] ) ) : 1,
+			'page'     => isset( $_POST['page'] ) ? min( 1000, max( 1, absint( $_POST['page'] ) ) ) : 1,
 			'per_page' => isset( $_POST['per_page'] ) ? $this->sanitize_per_page( $_POST['per_page'] ) : self::DEFAULT_PER_PAGE,
 		);
 	}
@@ -698,7 +706,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 	 * @return string
 	 */
 	private function get_url_search_value() {
-		return $this->get_first_url_value(
+		return $this->sanitize_search_value( $this->get_first_url_value(
 			array(
 				'cadv_search',
 				'buscar',
@@ -706,7 +714,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 				'search',
 				'q',
 			)
-		);
+		) );
 	}
 
 	/**
@@ -905,10 +913,17 @@ final class CADV_Woo_Functionalities_Marketplace {
 	 * @return int[]
 	 */
 	private function get_search_matching_product_ids( $search ) {
-		$search = trim( sanitize_text_field( $search ) );
+		$search = $this->sanitize_search_value( $search );
 
-		if ( '' === $search ) {
+		if ( $this->text_length( $search ) < 2 ) {
 			return array();
+		}
+
+		$cache_key = 'cadv_marketplace_search_' . md5( strtolower( $search ) );
+		$cached    = get_transient( $cache_key );
+
+		if ( is_array( $cached ) ) {
+			return array_map( 'absint', $cached );
 		}
 
 		$ids = array_merge(
@@ -917,7 +932,10 @@ final class CADV_Woo_Functionalities_Marketplace {
 			$this->get_taxonomy_search_product_ids( $search )
 		);
 
-		return array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) );
+		$ids = array_slice( array_values( array_unique( array_filter( array_map( 'absint', $ids ) ) ) ), 0, self::MAX_SEARCH_IDS );
+		set_transient( $cache_key, $ids, 5 * MINUTE_IN_SECONDS );
+
+		return $ids;
 	}
 
 	/**
@@ -932,7 +950,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 				'post_type'           => 'product',
 				'post_status'         => 'publish',
 				'fields'              => 'ids',
-				'posts_per_page'      => -1,
+				'posts_per_page'      => self::MAX_SEARCH_IDS,
 				's'                   => $search,
 				'no_found_rows'       => true,
 				'ignore_sticky_posts' => true,
@@ -973,7 +991,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 				'post_type'           => 'product',
 				'post_status'         => 'publish',
 				'fields'              => 'ids',
-				'posts_per_page'      => -1,
+				'posts_per_page'      => self::MAX_SEARCH_IDS,
 				'meta_query'          => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'no_found_rows'       => true,
 				'ignore_sticky_posts' => true,
@@ -1007,6 +1025,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 						'hide_empty' => false,
 						'fields'     => 'ids',
 						'search'     => $keyword,
+						'number'     => 50,
 					)
 				);
 
@@ -1017,7 +1036,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 				$term_ids = array_merge( $term_ids, array_map( 'absint', $terms ) );
 			}
 
-			$term_ids = array_values( array_unique( array_filter( $term_ids ) ) );
+			$term_ids = array_slice( array_values( array_unique( array_filter( $term_ids ) ) ), 0, 50 );
 
 			if ( 'product_cat' === $taxonomy ) {
 				foreach ( $term_ids as $term_id ) {
@@ -1029,7 +1048,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 				}
 			}
 
-			$term_ids = array_values( array_unique( array_filter( $term_ids ) ) );
+			$term_ids = array_slice( array_values( array_unique( array_filter( $term_ids ) ) ), 0, 100 );
 
 			if ( empty( $term_ids ) ) {
 				continue;
@@ -1042,7 +1061,7 @@ final class CADV_Woo_Functionalities_Marketplace {
 			}
 		}
 
-		return array_values( array_unique( array_filter( $product_ids ) ) );
+		return array_slice( array_values( array_unique( array_filter( $product_ids ) ) ), 0, self::MAX_SEARCH_IDS );
 	}
 
 	/**
@@ -1065,7 +1084,55 @@ final class CADV_Woo_Functionalities_Marketplace {
 			}
 		}
 
-		return array_slice( array_values( array_unique( array_filter( $keywords ) ) ), 0, 8 );
+		return array_slice( array_values( array_unique( array_filter( $keywords ) ) ), 0, self::MAX_SEARCH_KEYWORDS );
+	}
+
+	/**
+	 * Sanitize and cap a public marketplace search value.
+	 *
+	 * @param mixed $search Raw search value.
+	 * @return string
+	 */
+	private function sanitize_search_value( $search ) {
+		$search = trim( sanitize_text_field( (string) $search ) );
+
+		if ( function_exists( 'mb_substr' ) ) {
+			return mb_substr( $search, 0, self::MAX_SEARCH_LENGTH, 'UTF-8' );
+		}
+
+		return substr( $search, 0, self::MAX_SEARCH_LENGTH );
+	}
+
+	/**
+	 * Get the character length of a search value.
+	 *
+	 * @param string $value Search value.
+	 * @return int
+	 */
+	private function text_length( $value ) {
+		return function_exists( 'mb_strlen' ) ? mb_strlen( (string) $value, 'UTF-8' ) : strlen( (string) $value );
+	}
+
+	/**
+	 * Consume one marketplace AJAX request from the current IP quota.
+	 *
+	 * @return bool
+	 */
+	private function consume_ajax_rate_limit() {
+		$remote_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		$ip             = filter_var( $remote_address, FILTER_VALIDATE_IP ) ? $remote_address : 'unknown';
+		$ip             = apply_filters( 'cadv_woo_functionalities_client_ip', $ip, 'marketplace' );
+		$ip             = filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : 'unknown';
+		$key            = 'cadv_market_rate_' . md5( hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) ) );
+		$attempts       = (int) get_transient( $key );
+
+		if ( $attempts >= self::AJAX_RATE_LIMIT ) {
+			return false;
+		}
+
+		set_transient( $key, $attempts + 1, MINUTE_IN_SECONDS );
+
+		return true;
 	}
 
 	/**

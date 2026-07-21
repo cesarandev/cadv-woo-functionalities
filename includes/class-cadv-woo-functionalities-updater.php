@@ -41,6 +41,7 @@ final class CADV_Woo_Functionalities_Updater {
 	private function __construct() {
 		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'inject_update' ) );
 		add_filter( 'plugins_api', array( $this, 'plugin_info' ), 20, 3 );
+		add_filter( 'upgrader_pre_download', array( $this, 'verify_package_download' ), 10, 4 );
 	}
 
 	/**
@@ -124,12 +125,13 @@ final class CADV_Woo_Functionalities_Updater {
 	 */
 	private function get_remote_metadata() {
 		$endpoint = $this->get_update_endpoint();
+		$token    = $this->get_update_token();
 
-		if ( empty( $endpoint ) ) {
+		if ( empty( $endpoint ) || empty( $token ) ) {
 			return array();
 		}
 
-		$cache_key = 'cadv_woo_functionalities_update_metadata_' . md5( $endpoint );
+		$cache_key = 'cadv_woo_functionalities_update_metadata_' . md5( $endpoint . '|' . $token );
 		$cached    = get_site_transient( $cache_key );
 
 		if ( is_array( $cached ) ) {
@@ -149,6 +151,7 @@ final class CADV_Woo_Functionalities_Updater {
 				'timeout'     => 12,
 				'redirection' => 3,
 				'user-agent'  => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . home_url(),
+				'headers'     => array( 'Authorization' => 'Bearer ' . $token ),
 			)
 		);
 
@@ -162,7 +165,7 @@ final class CADV_Woo_Functionalities_Updater {
 			return array();
 		}
 
-		$metadata = $this->sanitize_metadata( $metadata );
+		$metadata = $this->sanitize_metadata( $metadata, $endpoint );
 
 		if ( ! empty( $metadata ) ) {
 			set_site_transient( $cache_key, $metadata, self::UPDATE_TRANSIENT_TTL );
@@ -177,6 +180,23 @@ final class CADV_Woo_Functionalities_Updater {
 	 * @return string
 	 */
 	private function get_update_endpoint() {
+		$endpoint = $this->get_configured_update_server();
+		$endpoint = remove_query_arg( 'token', $endpoint );
+		$endpoint = esc_url_raw( $endpoint, array( 'https' ) );
+
+		if ( 'https' !== wp_parse_url( $endpoint, PHP_URL_SCHEME ) ) {
+			return '';
+		}
+
+		return $endpoint;
+	}
+
+	/**
+	 * Get the configured endpoint before credentials are removed from its URL.
+	 *
+	 * @return string
+	 */
+	private function get_configured_update_server() {
 		$endpoint = defined( 'CADV_WOO_FUNCTIONALITIES_UPDATE_SERVER' ) ? CADV_WOO_FUNCTIONALITIES_UPDATE_SERVER : '';
 
 		/**
@@ -184,28 +204,65 @@ final class CADV_Woo_Functionalities_Updater {
 		 *
 		 * @param string $endpoint Update endpoint URL.
 		 */
-		$endpoint = apply_filters( 'cadv_woo_functionalities_update_server', $endpoint );
+		return (string) apply_filters( 'cadv_woo_functionalities_update_server', $endpoint );
+	}
 
-		return esc_url_raw( $endpoint );
+	/**
+	 * Get the update API token, supporting the legacy query-string setting.
+	 *
+	 * @return string
+	 */
+	private function get_update_token() {
+		$token = defined( 'CADV_WOO_FUNCTIONALITIES_UPDATE_TOKEN' ) ? CADV_WOO_FUNCTIONALITIES_UPDATE_TOKEN : '';
+
+		if ( '' === $token ) {
+			$query = wp_parse_url( $this->get_configured_update_server(), PHP_URL_QUERY );
+			$args  = array();
+			parse_str( (string) $query, $args );
+			$token = isset( $args['token'] ) ? $args['token'] : '';
+		}
+
+		$token = trim( (string) $token );
+
+		return strlen( $token ) >= 32 && ! preg_match( '/[\x00-\x20\x7F]/', $token ) ? $token : '';
 	}
 
 	/**
 	 * Sanitize remote update metadata.
 	 *
-	 * @param array $metadata Raw metadata.
+	 * @param array  $metadata Raw metadata.
+	 * @param string $endpoint Trusted metadata endpoint.
 	 * @return array
 	 */
-	private function sanitize_metadata( array $metadata ) {
-		$version      = isset( $metadata['version'] ) ? sanitize_text_field( $metadata['version'] ) : '';
-		$download_url = isset( $metadata['download_url'] ) ? esc_url_raw( $metadata['download_url'] ) : '';
+	private function sanitize_metadata( array $metadata, $endpoint ) {
+		$version       = isset( $metadata['version'] ) ? sanitize_text_field( $metadata['version'] ) : '';
+		$download_url  = isset( $metadata['download_url'] ) ? esc_url_raw( $metadata['download_url'], array( 'https' ) ) : '';
+		$package_hash  = isset( $metadata['package_sha256'] ) ? strtolower( sanitize_text_field( $metadata['package_sha256'] ) ) : '';
+		$expected_slug = dirname( plugin_basename( CADV_WOO_FUNCTIONALITIES_FILE ) );
+		$remote_slug   = isset( $metadata['slug'] ) ? sanitize_key( $metadata['slug'] ) : '';
+		$allowed_slugs = (array) apply_filters( 'cadv_woo_functionalities_update_allowed_slugs', array( $expected_slug, 'cadv-woo-functionalities' ), $metadata );
+		$allowed_slugs = array_filter( array_map( 'sanitize_key', $allowed_slugs ) );
+		$endpoint_host = strtolower( (string) wp_parse_url( $endpoint, PHP_URL_HOST ) );
+		$download_host = strtolower( (string) wp_parse_url( $download_url, PHP_URL_HOST ) );
+		$allowed_hosts = (array) apply_filters( 'cadv_woo_functionalities_update_allowed_hosts', array( $endpoint_host ), $metadata );
+		$allowed_hosts = array_map( 'strtolower', array_filter( array_map( 'sanitize_text_field', $allowed_hosts ) ) );
 
-		if ( empty( $version ) || empty( $download_url ) ) {
+		if (
+			empty( $version ) ||
+			empty( $download_url ) ||
+			'' === $endpoint_host ||
+			'https' !== wp_parse_url( $download_url, PHP_URL_SCHEME ) ||
+			! in_array( $download_host, $allowed_hosts, true ) ||
+			( '' !== $remote_slug && ! in_array( $remote_slug, $allowed_slugs, true ) ) ||
+			! preg_match( '/^[a-f0-9]{64}$/', $package_hash )
+		) {
 			return array();
 		}
 
 		return array(
-			'version'      => $version,
-			'download_url' => $download_url,
+			'version'        => $version,
+			'download_url'   => $download_url,
+			'package_sha256' => $package_hash,
 			'homepage'     => isset( $metadata['homepage'] ) ? esc_url_raw( $metadata['homepage'] ) : '',
 			'requires'     => isset( $metadata['requires'] ) ? sanitize_text_field( $metadata['requires'] ) : '',
 			'tested'       => isset( $metadata['tested'] ) ? sanitize_text_field( $metadata['tested'] ) : '',
@@ -213,5 +270,70 @@ final class CADV_Woo_Functionalities_Updater {
 			'description'  => isset( $metadata['description'] ) ? wp_kses_post( $metadata['description'] ) : '',
 			'changelog'    => isset( $metadata['changelog'] ) ? wp_kses_post( $metadata['changelog'] ) : '',
 		);
+	}
+
+	/**
+	 * Download and verify this plugin package before WordPress extracts it.
+	 *
+	 * @param bool|WP_Error|string $reply      Existing short-circuit value.
+	 * @param string               $package    Package URL.
+	 * @param WP_Upgrader          $upgrader   Upgrader instance.
+	 * @param array                $hook_extra Upgrade context.
+	 * @return bool|WP_Error|string
+	 */
+	public function verify_package_download( $reply, $package, $upgrader, $hook_extra ) {
+		unset( $upgrader );
+
+		$plugin_file = plugin_basename( CADV_WOO_FUNCTIONALITIES_FILE );
+		$is_target   = isset( $hook_extra['plugin'] ) && $plugin_file === $hook_extra['plugin'];
+
+		if ( ! $is_target && ! empty( $hook_extra['plugins'] ) && is_array( $hook_extra['plugins'] ) ) {
+			$is_target = in_array( $plugin_file, $hook_extra['plugins'], true );
+		}
+
+		if ( ! $is_target ) {
+			return $reply;
+		}
+
+		if ( is_wp_error( $reply ) ) {
+			return $reply;
+		}
+
+		$metadata = $this->get_remote_metadata();
+
+		if ( empty( $metadata['download_url'] ) || empty( $metadata['package_sha256'] ) || ! hash_equals( $metadata['download_url'], (string) $package ) ) {
+			return new WP_Error( 'cadv_update_untrusted_package', __( 'El paquete de actualizacion no coincide con los metadatos verificados.', 'cadv-woo-functionalities' ) );
+		}
+
+		$downloaded_by_plugin = ! is_string( $reply );
+
+		if ( ! $downloaded_by_plugin ) {
+			$temporary_file = $reply;
+		} else {
+			if ( ! function_exists( 'download_url' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			$temporary_file = download_url( $package, 300 );
+		}
+
+		if ( is_wp_error( $temporary_file ) || ! is_string( $temporary_file ) || ! is_file( $temporary_file ) ) {
+			if ( is_wp_error( $temporary_file ) ) {
+				return $temporary_file;
+			}
+
+			return new WP_Error( 'cadv_update_missing_package', __( 'No se pudo leer el paquete de actualizacion descargado.', 'cadv-woo-functionalities' ) );
+		}
+
+		$actual_hash = hash_file( 'sha256', $temporary_file );
+
+		if ( ! is_string( $actual_hash ) || ! hash_equals( $metadata['package_sha256'], strtolower( $actual_hash ) ) ) {
+			if ( $downloaded_by_plugin ) {
+				wp_delete_file( $temporary_file );
+			}
+			return new WP_Error( 'cadv_update_hash_mismatch', __( 'La actualizacion fue rechazada porque la firma del paquete no coincide.', 'cadv-woo-functionalities' ) );
+		}
+
+		return $temporary_file;
 	}
 }

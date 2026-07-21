@@ -2,8 +2,7 @@
 /**
  * Protected package download endpoint for the private update server.
  *
- * Expected URL:
- * https://updates.example.com/download.php?token=YOUR_TOKEN
+ * The metadata endpoint generates a short-lived signed URL for this endpoint.
  */
 
 $config_path = __DIR__ . '/config.php';
@@ -20,22 +19,25 @@ if ( ! is_array( $config ) ) {
 	exit( 'Invalid config.php' );
 }
 
-$token = isset( $_GET['token'] ) ? (string) $_GET['token'] : '';
-
-if ( ! hash_equals( (string) ( $config['download_token'] ?? '' ), $token ) ) {
-	http_response_code( 403 );
-	exit( 'Forbidden' );
-}
-
 $package_file = realpath( (string) ( $config['package_file'] ?? '' ) );
 $packages_dir = realpath( __DIR__ . '/packages' );
+$package_root = false !== $packages_dir ? rtrim( $packages_dir, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR : '';
 
-if ( false === $package_file || false === $packages_dir || 0 !== strpos( $package_file, $packages_dir ) || ! is_file( $package_file ) || ! is_readable( $package_file ) ) {
+if ( false === $package_file || false === $packages_dir || 0 !== strpos( $package_file, $package_root ) || ! is_file( $package_file ) || ! is_readable( $package_file ) ) {
 	http_response_code( 404 );
 	exit( 'Package not found' );
 }
 
-$filename = basename( $package_file );
+$filename         = basename( $package_file );
+$expires          = isset( $_GET['expires'] ) ? filter_var( $_GET['expires'], FILTER_VALIDATE_INT ) : false;
+$signature        = isset( $_GET['signature'] ) ? strtolower( (string) $_GET['signature'] ) : '';
+$configured_token = (string) ( $config['download_token'] ?? '' );
+$expected         = false !== $expires && strlen( $configured_token ) >= 32 ? hash_hmac( 'sha256', $expires . '|' . $filename, $configured_token ) : '';
+
+if ( strlen( $configured_token ) < 32 || false === $expires || $expires < time() || $expires > time() + 86700 || ! preg_match( '/^[a-f0-9]{64}$/', $signature ) || ! hash_equals( $expected, $signature ) ) {
+	http_response_code( 403 );
+	exit( 'Forbidden' );
+}
 
 header( 'Content-Type: application/zip' );
 header( 'Content-Length: ' . filesize( $package_file ) );

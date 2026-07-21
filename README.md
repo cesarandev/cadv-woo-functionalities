@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.45" src="https://img.shields.io/badge/versión-1.1.45-315c27?style=flat-square">
+  <img alt="Versión 1.1.46" src="https://img.shields.io/badge/versión-1.1.46-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -484,12 +484,14 @@ Si no existe un número global configurado, el shortcode no imprime contenido.
 | `[cadv_marketplace_search]` | Buscador externo para el marketplace. |
 | `[cesarandev_crm_cta]` | Formularios o modales de cotización, servicios y newsletter. |
 | `[cesarandev_whatsapp]` | Botón o URL de WhatsApp. |
-| `[cadv_mi_espacio]` | Icono de acceso a `/micuenta/`; solo se muestra con la sesión iniciada. |
-| `[cadv_mi_cuenta]` | Área del cliente con sus datos B2B y fichas técnicas disponibles. |
+| `[cadv_mi_espacio]` | Acceso a `/micuenta/`: botón de inicio de sesión para visitantes e icono con popover para clientes autenticados. |
+| `[cadv_mi_cuenta]` | Área modular del cliente con resumen, datos B2B, fichas técnicas y privacidad. |
 
 Los shortcodes de producto aceptan `product_id="123"`. Si el atributo se omite, resuelven primero el objeto global de WooCommerce, la página de producto y la entrada actual.
 
-`[cadv_mi_espacio]` admite `label="Mi espacio"` y `url="/micuenta/"`. El texto se presenta como popover al pasar el cursor o enfocar el icono. Para crear el área del cliente, publica una página con slug `micuenta` e inserta `[cadv_mi_cuenta]`; los visitantes verán el formulario de acceso de WooCommerce y los usuarios autenticados verán la información capturada por el plugin.
+`[cadv_mi_espacio]` admite `label="Mi espacio"`, `login_label="Iniciar sesión"` y `url="/micuenta/"`. Con la sesión iniciada, el texto se presenta como popover al pasar el cursor o enfocar el icono; sin sesión, se muestra un botón de acceso. Para crear el área del cliente, publica una página con slug `micuenta` e inserta `[cadv_mi_cuenta]`; los visitantes verán el formulario de acceso de WooCommerce y los usuarios autenticados verán un menú modular con la información capturada por el plugin.
+
+Nuevas secciones pueden registrarse sin modificar el shortcode mediante el filtro `cadv_woo_functionalities_account_modules`. Cada módulo se identifica por su slug y define `label`, `icon` y un `callback` invocable; opcionalmente puede incluir `capability` para limitar su acceso. El callback recibe el ID del usuario, el slug y la configuración completa del módulo. También están disponibles las acciones `cadv_woo_functionalities_before_account_module` y `cadv_woo_functionalities_after_account_module` para integrar contenido alrededor del módulo activo.
 
 ## Importación y exportación de productos
 
@@ -548,8 +550,9 @@ En `wp-config.php`:
 ```php
 define(
 	'CADV_WOO_FUNCTIONALITIES_UPDATE_SERVER',
-	'https://tu-dominio.com/update-server/index.php?token=TU_TOKEN'
+	'https://tu-dominio.com/update-server/index.php'
 );
+define( 'CADV_WOO_FUNCTIONALITIES_UPDATE_TOKEN', 'TU_TOKEN_LARGO' );
 ```
 
 También puedes usar el filtro:
@@ -558,10 +561,12 @@ También puedes usar el filtro:
 add_filter(
 	'cadv_woo_functionalities_update_server',
 	function () {
-		return 'https://tu-dominio.com/update-server/index.php?token=TU_TOKEN';
+		return 'https://tu-dominio.com/update-server/index.php';
 	}
 );
 ```
+
+El token se envía en la cabecera `Authorization`, por lo que no queda expuesto en URLs ni registros del servidor. Las configuraciones antiguas con `?token=` siguen siendo leídas por el cliente para facilitar la migración, pero se recomienda separar ambas constantes.
 
 ### Configurar el servidor
 
@@ -569,7 +574,7 @@ add_filter(
 2. Copia `update-server/config.example.php` como `update-server/config.php`.
 3. Define un `download_token` largo y privado.
 4. Sube el ZIP a `update-server/packages/`.
-5. Actualiza `version`, `package_file`, compatibilidad, descripción y `changelog`.
+5. Actualiza `version`, `package_file`, `base_url`, compatibilidad, descripción y `changelog`.
 6. No publiques `config.php` ni el token en el repositorio.
 
 ### Publicar una versión
@@ -580,7 +585,7 @@ add_filter(
 4. Actualiza `update-server/config.php`.
 5. Comprueba la actualización desde **Escritorio → Actualizaciones**.
 
-El endpoint devuelve versión, URL de descarga, compatibilidad, descripción y changelog. WordPress muestra esos datos en su interfaz nativa de plugins.
+El endpoint devuelve versión, una URL firmada de descarga, el SHA-256 del paquete, compatibilidad, descripción y changelog. El cliente solo acepta HTTPS, hosts autorizados y paquetes cuyo hash coincida antes de instalar.
 
 Consulta también [`update-server/README.md`](update-server/README.md).
 
@@ -643,12 +648,14 @@ Los pedidos de fichas se crean con `created_via = cesarandev_technical_sheet_req
 ## Seguridad y privacidad
 
 - Los formularios AJAX verifican nonces de WordPress.
+- Los formularios públicos de ficha técnica y CTA exigen CAPTCHA firmado, usan un honeypot y limitan por IP incluso los intentos fallidos.
+- La búsqueda AJAX del marketplace aplica límite por IP, límites de longitud y resultados acotados.
 - Los formularios administrativos requieren `manage_woocommerce` y nonces específicos.
 - IDs, correos, URLs, textos y colores se sanitizan antes de usarse.
 - Las salidas HTML utilizan las funciones de escape de WordPress.
 - Los formularios públicos exigen aceptación explícita de privacidad.
 - Las descargas se entregan mediante permisos nativos de WooCommerce.
-- El token de actualizaciones debe viajar únicamente por HTTPS y mantenerse fuera del repositorio.
+- El token de actualizaciones viaja por cabecera sobre HTTPS; las descargas usan URLs temporales firmadas y verificación SHA-256.
 - Las solicitudes de eliminación requieren sesión y confirmación, pero necesitan resolución humana desde el CRM.
 
 Antes de producción, revisa el texto legal de los formularios, configura la página de privacidad y confirma la política de conservación de leads, pedidos y usuarios.

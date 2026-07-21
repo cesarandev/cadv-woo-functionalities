@@ -10,22 +10,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class CADV_Woo_Functionalities {
-	const OPTION_PHONE            = 'cadv_woo_functionalities_whatsapp_phone';
-	const OPTION_MESSAGE_TEMPLATE = 'cadv_woo_functionalities_message_template';
-	const AJAX_ACTION             = 'cesarandev_wf_request_technical_sheet';
-	const NONCE_ACTION            = 'cesarandev_wf_request_technical_sheet';
-	const CTA_ACTION              = 'cesarandev_wf_submit_cta';
-	const CTA_NONCE_ACTION        = 'cesarandev_wf_submit_cta';
-	const EXPORT_ACTION           = 'cesarandev_wf_export_requests';
-	const CRM_UPDATE_ACTION       = 'cesarandev_wf_update_crm_request';
-	const CRM_LEAD_UPDATE_ACTION  = 'cesarandev_wf_update_crm_lead';
-	const DELETE_ACCOUNT_ACTION   = 'cesarandev_wf_request_account_deletion';
-	const DELETE_ACCOUNT_NONCE    = 'cesarandev_wf_request_account_deletion';
-	const ORDER_SOURCE            = 'cesarandev_technical_sheet_request';
-	const LEAD_POST_TYPE          = 'cesarandev_wf_lead';
+	const OPTION_PHONE             = 'cadv_woo_functionalities_whatsapp_phone';
+	const OPTION_MESSAGE_TEMPLATE  = 'cadv_woo_functionalities_message_template';
+	const AJAX_ACTION              = 'cesarandev_wf_request_technical_sheet';
+	const NONCE_ACTION             = 'cesarandev_wf_request_technical_sheet';
+	const CTA_ACTION               = 'cesarandev_wf_submit_cta';
+	const CTA_NONCE_ACTION         = 'cesarandev_wf_submit_cta';
+	const EXPORT_ACTION            = 'cesarandev_wf_export_requests';
+	const CRM_UPDATE_ACTION        = 'cesarandev_wf_update_crm_request';
+	const CRM_LEAD_UPDATE_ACTION   = 'cesarandev_wf_update_crm_lead';
+	const DELETE_ACCOUNT_ACTION    = 'cesarandev_wf_request_account_deletion';
+	const DELETE_ACCOUNT_NONCE     = 'cesarandev_wf_request_account_deletion';
+	const ORDER_SOURCE             = 'cesarandev_technical_sheet_request';
+	const LEAD_POST_TYPE           = 'cesarandev_wf_lead';
 	const MARKETPLACE_TERM_COLOR_META = '_cadv_marketplace_color';
-	const PRODUCT_ICA_META        = '_cadv_marketplace_ica_registration';
-	const DEFAULT_LINE_COLOR      = '#203212';
+	const PRODUCT_ICA_META         = '_cadv_marketplace_ica_registration';
+	const DEFAULT_LINE_COLOR       = '#203212';
+	const PUBLIC_RATE_LIMIT_WINDOW = HOUR_IN_SECONDS;
+	const TECHNICAL_RATE_LIMIT     = 10;
+	const CTA_RATE_LIMIT           = 20;
+	const CAPTCHA_MAX_AGE          = 12 * HOUR_IN_SECONDS;
+	const MAX_LEAD_INTERACTIONS    = 50;
 
 	/**
 	 * Singleton instance.
@@ -906,6 +911,7 @@ final class CADV_Woo_Functionalities {
 					'loading'  => __( 'Enviando solicitud...', 'cadv-woo-functionalities' ),
 					'error'    => __( 'No se pudo registrar la solicitud. Intentalo de nuevo.', 'cadv-woo-functionalities' ),
 					'privacy'  => __( 'Debes aceptar la politica de privacidad.', 'cadv-woo-functionalities' ),
+					'captcha'  => __( 'Completa la verificacion de seguridad.', 'cadv-woo-functionalities' ),
 					'demoDate' => __( 'Selecciona una fecha de demostracion entre hoy y un mes a partir de hoy.', 'cadv-woo-functionalities' ),
 				),
 			)
@@ -1060,35 +1066,45 @@ final class CADV_Woo_Functionalities {
 	}
 
 	/**
-	 * Render the authenticated customer shortcut.
+	 * Render the session-aware customer shortcut.
 	 *
 	 * Usage: [cadv_mi_espacio]
-	 * Optional: [cadv_mi_espacio label="Mi espacio" url="/micuenta/"]
+	 * Optional: [cadv_mi_espacio label="Mi espacio" login_label="Iniciar sesión" url="/micuenta/"]
 	 *
 	 * @param array $atts Shortcode attributes.
 	 * @return string
 	 */
 	public function render_my_space_shortcode( $atts = array() ) {
-		if ( ! is_user_logged_in() ) {
-			return '';
-		}
-
 		$atts = shortcode_atts(
 			array(
-				'label' => __( 'Mi espacio', 'cadv-woo-functionalities' ),
-				'url'   => '',
+				'label'       => __( 'Mi espacio', 'cadv-woo-functionalities' ),
+				'login_label' => __( 'Iniciar sesión', 'cadv-woo-functionalities' ),
+				'url'         => '',
 			),
 			$atts,
 			'cadv_mi_espacio'
 		);
-		$label = sanitize_text_field( $atts['label'] );
-		$url   = $this->get_my_account_url( $atts['url'] );
+		$label       = sanitize_text_field( $atts['label'] );
+		$login_label = sanitize_text_field( $atts['login_label'] );
+		$url         = $this->get_my_account_url( $atts['url'] );
 
 		if ( '' === $label ) {
 			$label = __( 'Mi espacio', 'cadv-woo-functionalities' );
 		}
 
+		if ( '' === $login_label ) {
+			$login_label = __( 'Iniciar sesión', 'cadv-woo-functionalities' );
+		}
+
 		$this->enqueue_frontend_assets();
+
+		if ( ! is_user_logged_in() ) {
+			return sprintf(
+				'<a class="cesarandev-wf-my-space-login" href="%1$s"><svg class="cesarandev-wf-my-space-login__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm5.59 4.59L17 6.17 22.83 12 17 17.83l-1.41-1.42L19 13H9v-2h10l-3.41-3.41Z"/></svg><span>%2$s</span></a>',
+				esc_url( $url ),
+				esc_html( $login_label )
+			);
+		}
 
 		return sprintf(
 			'<span class="cesarandev-wf-my-space"><a class="cesarandev-wf-my-space__link" href="%1$s" aria-label="%2$s"><svg class="cesarandev-wf-my-space__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5.33 0-8 2.67-8 5.25C4 20.77 5.23 22 6.75 22h10.5A2.75 2.75 0 0 0 20 19.25C20 16.67 17.33 14 12 14Z"/></svg><span class="cesarandev-wf-my-space__popover" role="tooltip">%3$s</span></a></span>',
@@ -1130,10 +1146,12 @@ final class CADV_Woo_Functionalities {
 			return ob_get_clean();
 		}
 
-		$user_id   = get_current_user_id();
-		$user      = get_userdata( $user_id );
-		$fields    = $this->get_customer_account_fields( $user_id );
-		$downloads = function_exists( 'wc_get_customer_available_downloads' ) ? wc_get_customer_available_downloads( $user_id ) : array();
+		$user_id        = get_current_user_id();
+		$user           = get_userdata( $user_id );
+		$modules        = $this->get_customer_account_modules( $user_id );
+		$requested_slug = isset( $_GET['seccion'] ) ? sanitize_key( wp_unslash( $_GET['seccion'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation state.
+		$active_slug    = isset( $modules[ $requested_slug ] ) ? $requested_slug : (string) array_key_first( $modules );
+		$active_module  = isset( $modules[ $active_slug ] ) ? $modules[ $active_slug ] : array();
 		?>
 		<section class="cesarandev-wf-my-account">
 			<header class="cesarandev-wf-my-account__header">
@@ -1147,44 +1165,260 @@ final class CADV_Woo_Functionalities {
 				<a class="cesarandev-wf-my-account__logout" href="<?php echo esc_url( wc_logout_url( $this->get_my_account_url() ) ); ?>"><?php esc_html_e( 'Cerrar sesion', 'cadv-woo-functionalities' ); ?></a>
 			</header>
 
-			<div class="cesarandev-wf-my-account__section">
-				<h3><?php esc_html_e( 'Informacion de la cuenta', 'cadv-woo-functionalities' ); ?></h3>
-				<dl class="cesarandev-wf-my-account__details">
-					<?php foreach ( $fields as $label => $value ) : ?>
-						<div>
-							<dt><?php echo esc_html( $label ); ?></dt>
-							<dd><?php echo esc_html( '' !== trim( (string) $value ) ? $value : __( 'No registrado', 'cadv-woo-functionalities' ) ); ?></dd>
-						</div>
-					<?php endforeach; ?>
-				</dl>
-			</div>
+			<?php if ( function_exists( 'wc_print_notices' ) ) : ?>
+				<?php wc_print_notices(); ?>
+			<?php endif; ?>
 
-			<div class="cesarandev-wf-my-account__section">
-				<h3><?php esc_html_e( 'Mis fichas tecnicas y descargas', 'cadv-woo-functionalities' ); ?></h3>
-				<?php if ( ! empty( $downloads ) ) : ?>
-					<div class="cesarandev-wf-my-account__downloads">
-						<?php foreach ( $downloads as $download ) : ?>
-							<article class="cesarandev-wf-my-account__download">
-								<div>
-									<strong><?php echo esc_html( isset( $download['product_name'] ) ? $download['product_name'] : __( 'Ficha tecnica', 'cadv-woo-functionalities' ) ); ?></strong>
-									<?php if ( ! empty( $download['download_name'] ) ) : ?>
-										<span><?php echo esc_html( $download['download_name'] ); ?></span>
-									<?php endif; ?>
-								</div>
-								<?php if ( ! empty( $download['download_url'] ) ) : ?>
-									<a class="cesarandev-wf-my-account__download-button" href="<?php echo esc_url( $download['download_url'] ); ?>"><?php esc_html_e( 'Descargar', 'cadv-woo-functionalities' ); ?></a>
-								<?php endif; ?>
-							</article>
-						<?php endforeach; ?>
-					</div>
-				<?php else : ?>
-					<p class="cesarandev-wf-my-account__empty"><?php esc_html_e( 'Todavia no tienes fichas tecnicas disponibles.', 'cadv-woo-functionalities' ); ?></p>
-				<?php endif; ?>
+			<div class="cesarandev-wf-my-account__body">
+				<nav class="cesarandev-wf-my-account__nav" aria-label="<?php esc_attr_e( 'Secciones de mi espacio', 'cadv-woo-functionalities' ); ?>">
+					<?php foreach ( $modules as $slug => $module ) : ?>
+						<a class="cesarandev-wf-my-account__nav-link<?php echo $slug === $active_slug ? ' is-active' : ''; ?>" href="<?php echo esc_url( $this->get_my_account_module_url( $slug ) ); ?>"<?php echo $slug === $active_slug ? ' aria-current="page"' : ''; ?>>
+							<?php echo $this->get_customer_account_module_icon( $module['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG comes from the plugin allowlist. ?>
+							<span><?php echo esc_html( $module['label'] ); ?></span>
+						</a>
+					<?php endforeach; ?>
+				</nav>
+
+				<main class="cesarandev-wf-my-account__content" id="cadv-account-<?php echo esc_attr( $active_slug ); ?>">
+					<?php
+					do_action( 'cadv_woo_functionalities_before_account_module', $active_slug, $user_id, $active_module );
+					if ( ! empty( $active_module['callback'] ) && is_callable( $active_module['callback'] ) ) {
+						echo call_user_func( $active_module['callback'], $user_id, $active_slug, $active_module ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Trusted registered module callback.
+					}
+					do_action( 'cadv_woo_functionalities_after_account_module', $active_slug, $user_id, $active_module );
+					?>
+				</main>
 			</div>
 		</section>
 		<?php
 
 		return ob_get_clean();
+	}
+
+	/**
+	 * Get the modules available in the customer area.
+	 *
+	 * Each module needs a label and a callable callback. The icon is optional and
+	 * accepts one of the built-in icon keys: overview, profile, downloads, privacy.
+	 *
+	 * @param int $user_id Customer user ID.
+	 * @return array
+	 */
+	private function get_customer_account_modules( $user_id ) {
+		$modules = array(
+			'resumen'   => array(
+				'label'    => __( 'Resumen', 'cadv-woo-functionalities' ),
+				'icon'     => 'overview',
+				'callback' => array( $this, 'render_customer_account_overview' ),
+			),
+			'mis-datos' => array(
+				'label'    => __( 'Mis datos', 'cadv-woo-functionalities' ),
+				'icon'     => 'profile',
+				'callback' => array( $this, 'render_customer_account_details' ),
+			),
+			'descargas' => array(
+				'label'    => __( 'Fichas tecnicas', 'cadv-woo-functionalities' ),
+				'icon'     => 'downloads',
+				'callback' => array( $this, 'render_customer_account_downloads' ),
+			),
+		);
+
+		if ( $this->is_restricted_sheet_customer( $user_id ) ) {
+			$modules['privacidad'] = array(
+				'label'    => __( 'Privacidad', 'cadv-woo-functionalities' ),
+				'icon'     => 'privacy',
+				'callback' => array( $this, 'render_customer_account_privacy' ),
+			);
+		}
+
+		/**
+		 * Filter the modules shown in the custom customer area.
+		 *
+		 * @param array $modules Modules keyed by their URL slug.
+		 * @param int   $user_id Current customer ID.
+		 */
+		$modules = apply_filters( 'cadv_woo_functionalities_account_modules', $modules, $user_id );
+		$valid   = array();
+
+		foreach ( (array) $modules as $slug => $module ) {
+			$slug = sanitize_key( $slug );
+
+			if ( '' === $slug || ! is_array( $module ) || empty( $module['label'] ) || empty( $module['callback'] ) || ! is_callable( $module['callback'] ) ) {
+				continue;
+			}
+
+			if ( ! empty( $module['capability'] ) && ! current_user_can( sanitize_key( $module['capability'] ) ) ) {
+				continue;
+			}
+
+			$module['label'] = sanitize_text_field( $module['label'] );
+			$module['icon']  = ! empty( $module['icon'] ) ? sanitize_key( $module['icon'] ) : 'default';
+			$valid[ $slug ]  = $module;
+		}
+
+		return $valid;
+	}
+
+	/**
+	 * Render the account overview module.
+	 *
+	 * @param int $user_id Customer user ID.
+	 * @return string
+	 */
+	public function render_customer_account_overview( $user_id ) {
+		$fields          = $this->get_customer_account_fields( $user_id );
+		$completed       = count( array_filter( $fields, static function ( $value ) { return '' !== trim( (string) $value ); } ) );
+		$downloads       = $this->get_customer_account_downloads( $user_id );
+		$profile_percent = ! empty( $fields ) ? (int) round( ( $completed / count( $fields ) ) * 100 ) : 0;
+
+		ob_start();
+		?>
+		<div class="cesarandev-wf-my-account__section">
+			<h3><?php esc_html_e( 'Resumen de mi espacio', 'cadv-woo-functionalities' ); ?></h3>
+			<p class="cesarandev-wf-my-account__intro"><?php esc_html_e( 'Consulta rapidamente el estado de tu informacion y los documentos disponibles.', 'cadv-woo-functionalities' ); ?></p>
+			<div class="cesarandev-wf-my-account__stats">
+				<div><strong><?php echo esc_html( $profile_percent . '%' ); ?></strong><span><?php esc_html_e( 'Perfil registrado', 'cadv-woo-functionalities' ); ?></span></div>
+				<div><strong><?php echo esc_html( count( $downloads ) ); ?></strong><span><?php esc_html_e( 'Descargas disponibles', 'cadv-woo-functionalities' ); ?></span></div>
+			</div>
+			<div class="cesarandev-wf-my-account__quick-links">
+				<a href="<?php echo esc_url( $this->get_my_account_module_url( 'mis-datos' ) ); ?>"><?php esc_html_e( 'Consultar mis datos', 'cadv-woo-functionalities' ); ?><span aria-hidden="true">&rarr;</span></a>
+				<a href="<?php echo esc_url( $this->get_my_account_module_url( 'descargas' ) ); ?>"><?php esc_html_e( 'Ver fichas tecnicas', 'cadv-woo-functionalities' ); ?><span aria-hidden="true">&rarr;</span></a>
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Render the customer details module.
+	 *
+	 * @param int $user_id Customer user ID.
+	 * @return string
+	 */
+	public function render_customer_account_details( $user_id ) {
+		$fields = $this->get_customer_account_fields( $user_id );
+
+		ob_start();
+		?>
+		<div class="cesarandev-wf-my-account__section">
+			<h3><?php esc_html_e( 'Informacion de la cuenta', 'cadv-woo-functionalities' ); ?></h3>
+			<p class="cesarandev-wf-my-account__intro"><?php esc_html_e( 'Estos son los datos registrados en tus solicitudes.', 'cadv-woo-functionalities' ); ?></p>
+			<dl class="cesarandev-wf-my-account__details">
+				<?php foreach ( $fields as $label => $value ) : ?>
+					<div>
+						<dt><?php echo esc_html( $label ); ?></dt>
+						<dd><?php echo esc_html( '' !== trim( (string) $value ) ? $value : __( 'No registrado', 'cadv-woo-functionalities' ) ); ?></dd>
+					</div>
+				<?php endforeach; ?>
+			</dl>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Render the customer downloads module.
+	 *
+	 * @param int $user_id Customer user ID.
+	 * @return string
+	 */
+	public function render_customer_account_downloads( $user_id ) {
+		$downloads = $this->get_customer_account_downloads( $user_id );
+
+		ob_start();
+		?>
+		<div class="cesarandev-wf-my-account__section">
+			<h3><?php esc_html_e( 'Mis fichas tecnicas y descargas', 'cadv-woo-functionalities' ); ?></h3>
+			<?php if ( ! empty( $downloads ) ) : ?>
+				<div class="cesarandev-wf-my-account__downloads">
+					<?php foreach ( $downloads as $download ) : ?>
+						<article class="cesarandev-wf-my-account__download">
+							<div>
+								<strong><?php echo esc_html( isset( $download['product_name'] ) ? $download['product_name'] : __( 'Ficha tecnica', 'cadv-woo-functionalities' ) ); ?></strong>
+								<?php if ( ! empty( $download['download_name'] ) ) : ?>
+									<span><?php echo esc_html( $download['download_name'] ); ?></span>
+								<?php endif; ?>
+							</div>
+							<?php if ( ! empty( $download['download_url'] ) ) : ?>
+								<a class="cesarandev-wf-my-account__download-button" href="<?php echo esc_url( $download['download_url'] ); ?>"><?php esc_html_e( 'Descargar', 'cadv-woo-functionalities' ); ?></a>
+							<?php endif; ?>
+						</article>
+					<?php endforeach; ?>
+				</div>
+			<?php else : ?>
+				<p class="cesarandev-wf-my-account__empty"><?php esc_html_e( 'Todavia no tienes fichas tecnicas disponibles.', 'cadv-woo-functionalities' ); ?></p>
+			<?php endif; ?>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Render the privacy module for plugin-created customer accounts.
+	 *
+	 * @param int $user_id Customer user ID.
+	 * @return string
+	 */
+	public function render_customer_account_privacy( $user_id ) {
+		$delete_status = get_user_meta( $user_id, '_cesarandev_wf_delete_request_status', true );
+
+		ob_start();
+		?>
+		<div class="cesarandev-wf-my-account__section">
+			<h3><?php esc_html_e( 'Privacidad y cuenta', 'cadv-woo-functionalities' ); ?></h3>
+			<p class="cesarandev-wf-my-account__intro"><?php esc_html_e( 'Puedes solicitar que nuestro equipo revise la eliminacion de tu cuenta y sus datos asociados.', 'cadv-woo-functionalities' ); ?></p>
+			<?php if ( 'pending' === $delete_status ) : ?>
+				<p class="cesarandev-wf-my-account__status"><?php esc_html_e( 'Tu solicitud de eliminacion ya fue recibida y esta pendiente de revision.', 'cadv-woo-functionalities' ); ?></p>
+			<?php else : ?>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return window.confirm('<?php echo esc_js( __( 'Confirmas que deseas solicitar la eliminacion de tu cuenta?', 'cadv-woo-functionalities' ) ); ?>');">
+					<input type="hidden" name="action" value="<?php echo esc_attr( self::DELETE_ACCOUNT_ACTION ); ?>" />
+					<input type="hidden" name="redirect_to" value="<?php echo esc_url( $this->get_my_account_module_url( 'privacidad' ) ); ?>" />
+					<?php wp_nonce_field( self::DELETE_ACCOUNT_NONCE ); ?>
+					<button type="submit" class="cesarandev-wf-my-account__danger-button"><?php esc_html_e( 'Solicitar eliminacion de cuenta', 'cadv-woo-functionalities' ); ?></button>
+				</form>
+			<?php endif; ?>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Get all downloads currently available to a customer.
+	 *
+	 * @param int $user_id Customer user ID.
+	 * @return array
+	 */
+	private function get_customer_account_downloads( $user_id ) {
+		return function_exists( 'wc_get_customer_available_downloads' ) ? (array) wc_get_customer_available_downloads( $user_id ) : array();
+	}
+
+	/**
+	 * Build a customer-area module URL.
+	 *
+	 * @param string $slug Module slug.
+	 * @return string
+	 */
+	private function get_my_account_module_url( $slug ) {
+		return add_query_arg( 'seccion', sanitize_key( $slug ), $this->get_my_account_url() );
+	}
+
+	/**
+	 * Render an allowlisted icon for an account module.
+	 *
+	 * @param string $icon Icon key.
+	 * @return string
+	 */
+	private function get_customer_account_module_icon( $icon ) {
+		$paths = array(
+			'overview'  => '<path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z"/>',
+			'profile'   => '<path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-4.97 0-8 2.49-8 5.25C4 20.77 5.23 22 6.75 22h10.5A2.75 2.75 0 0 0 20 19.25C20 16.49 16.97 14 12 14Z"/>',
+			'downloads' => '<path d="M11 3h2v10.17l3.59-3.58L18 11l-6 6-6-6 1.41-1.41L11 13.17V3Zm-6 16h14v2H5v-2Z"/>',
+			'privacy'   => '<path d="M12 2 4 5v6c0 5.05 3.41 9.74 8 11 4.59-1.26 8-5.95 8-11V5l-8-3Zm0 2.13 6 2.25V11c0 3.99-2.55 7.86-6 8.92C8.55 18.86 6 14.99 6 11V6.38l6-2.25ZM11 8h2v5h-2V8Zm0 7h2v2h-2v-2Z"/>',
+			'default'   => '<circle cx="12" cy="12" r="6"/>',
+		);
+		$icon  = isset( $paths[ $icon ] ) ? $icon : 'default';
+
+		return '<svg class="cesarandev-wf-my-account__nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' . $paths[ $icon ] . '</svg>';
 	}
 
 	/**
@@ -1310,32 +1544,32 @@ final class CADV_Woo_Functionalities {
 
 				<label class="cesarandev-wf-cta__field cesarandev-wf-cta__field--full">
 					<span><?php esc_html_e( 'Nombre completo *', 'cadv-woo-functionalities' ); ?></span>
-					<input type="text" name="full_name" autocomplete="name" placeholder="<?php esc_attr_e( 'Nombre y apellidos', 'cadv-woo-functionalities' ); ?>" required />
+					<input type="text" name="full_name" autocomplete="name" maxlength="120" placeholder="<?php esc_attr_e( 'Nombre y apellidos', 'cadv-woo-functionalities' ); ?>" required />
 				</label>
 
 				<?php if ( ! $is_newsletter ) : ?>
 					<label class="cesarandev-wf-cta__field">
 						<span><?php esc_html_e( 'Empresa *', 'cadv-woo-functionalities' ); ?></span>
-						<input type="text" name="company" autocomplete="organization" placeholder="<?php esc_attr_e( 'Razon social', 'cadv-woo-functionalities' ); ?>" required />
+						<input type="text" name="company" autocomplete="organization" maxlength="160" placeholder="<?php esc_attr_e( 'Razon social', 'cadv-woo-functionalities' ); ?>" required />
 					</label>
 					<label class="cesarandev-wf-cta__field">
 						<span><?php esc_html_e( 'Cargo *', 'cadv-woo-functionalities' ); ?></span>
-						<input type="text" name="position" autocomplete="organization-title" placeholder="<?php esc_attr_e( 'Ej. Gerente de compras', 'cadv-woo-functionalities' ); ?>" required />
+						<input type="text" name="position" autocomplete="organization-title" maxlength="120" placeholder="<?php esc_attr_e( 'Ej. Gerente de compras', 'cadv-woo-functionalities' ); ?>" required />
 					</label>
 					<label class="cesarandev-wf-cta__field">
 						<span><?php esc_html_e( 'Telefono *', 'cadv-woo-functionalities' ); ?></span>
-						<input type="tel" name="phone" autocomplete="tel" placeholder="+57 ___ ___ ____" required />
+						<input type="tel" name="phone" autocomplete="tel" maxlength="40" placeholder="+57 ___ ___ ____" required />
 					</label>
 				<?php else : ?>
 					<label class="cesarandev-wf-cta__field">
 						<span><?php esc_html_e( 'Empresa', 'cadv-woo-functionalities' ); ?></span>
-						<input type="text" name="company" autocomplete="organization" placeholder="<?php esc_attr_e( 'Razon social', 'cadv-woo-functionalities' ); ?>" />
+						<input type="text" name="company" autocomplete="organization" maxlength="160" placeholder="<?php esc_attr_e( 'Razon social', 'cadv-woo-functionalities' ); ?>" />
 					</label>
 				<?php endif; ?>
 
 				<label class="cesarandev-wf-cta__field">
 					<span><?php esc_html_e( 'Correo electronico *', 'cadv-woo-functionalities' ); ?></span>
-					<input type="email" name="email" autocomplete="email" placeholder="correo@empresa.com" required />
+					<input type="email" name="email" autocomplete="email" maxlength="254" placeholder="correo@empresa.com" required />
 				</label>
 
 				<?php if ( ! $is_newsletter ) : ?>
@@ -1359,8 +1593,10 @@ final class CADV_Woo_Functionalities {
 
 				<label class="cesarandev-wf-cta__field">
 					<span><?php esc_html_e( 'Tipo de cultivo', 'cadv-woo-functionalities' ); ?></span>
-					<input type="text" name="crop_type" placeholder="<?php esc_attr_e( 'Palma, banano, arroz, maiz, otro', 'cadv-woo-functionalities' ); ?>" />
+					<input type="text" name="crop_type" maxlength="120" placeholder="<?php esc_attr_e( 'Palma, banano, arroz, maiz, otro', 'cadv-woo-functionalities' ); ?>" />
 				</label>
+
+				<?php $this->render_public_captcha_fields( 'cta' ); ?>
 
 				<label class="cesarandev-wf-cta__privacy cesarandev-wf-cta__field--full">
 					<input type="checkbox" name="privacy_acceptance" value="1" required />
@@ -1525,11 +1761,12 @@ final class CADV_Woo_Functionalities {
 	 * @return string
 	 */
 	private function get_current_url() {
-		$scheme = is_ssl() ? 'https://' : 'http://';
-		$host   = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated
-		$uri    = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated
+		$uri   = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated
+		$path  = wp_parse_url( $uri, PHP_URL_PATH );
+		$query = wp_parse_url( $uri, PHP_URL_QUERY );
+		$url   = home_url( is_string( $path ) && '' !== $path ? $path : '/' );
 
-		return $host ? $scheme . $host . $uri : home_url( '/' );
+		return is_string( $query ) && '' !== $query ? $url . '?' . $query : $url;
 	}
 
 	/**
@@ -1851,28 +2088,30 @@ final class CADV_Woo_Functionalities {
 
 					<label>
 						<span><?php esc_html_e( 'Nombre completo *', 'cadv-woo-functionalities' ); ?></span>
-						<input type="text" name="full_name" autocomplete="name" value="<?php echo esc_attr( $defaults['full_name'] ); ?>" required />
+						<input type="text" name="full_name" autocomplete="name" maxlength="120" value="<?php echo esc_attr( $defaults['full_name'] ); ?>" required />
 					</label>
 
 					<label>
 						<span><?php esc_html_e( 'Empresa *', 'cadv-woo-functionalities' ); ?></span>
-						<input type="text" name="company" autocomplete="organization" value="<?php echo esc_attr( $defaults['company'] ); ?>" required />
+						<input type="text" name="company" autocomplete="organization" maxlength="160" value="<?php echo esc_attr( $defaults['company'] ); ?>" required />
 					</label>
 
 					<label>
 						<span><?php esc_html_e( 'Cargo *', 'cadv-woo-functionalities' ); ?></span>
-						<input type="text" name="position" autocomplete="organization-title" value="<?php echo esc_attr( $defaults['position'] ); ?>" required />
+						<input type="text" name="position" autocomplete="organization-title" maxlength="120" value="<?php echo esc_attr( $defaults['position'] ); ?>" required />
 					</label>
 
 					<label>
 						<span><?php esc_html_e( 'Correo electronico *', 'cadv-woo-functionalities' ); ?></span>
-						<input type="email" name="email" autocomplete="email" placeholder="correo@empresa.com" value="<?php echo esc_attr( $defaults['email'] ); ?>" <?php echo $defaults['logged_in'] ? 'readonly="readonly"' : ''; ?> required />
+						<input type="email" name="email" autocomplete="email" maxlength="254" placeholder="correo@empresa.com" value="<?php echo esc_attr( $defaults['email'] ); ?>" <?php echo $defaults['logged_in'] ? 'readonly="readonly"' : ''; ?> required />
 					</label>
 
 					<label>
 						<span><?php esc_html_e( 'Telefono *', 'cadv-woo-functionalities' ); ?></span>
-						<input type="tel" name="phone" autocomplete="tel" value="<?php echo esc_attr( $defaults['phone'] ); ?>" required />
+						<input type="tel" name="phone" autocomplete="tel" maxlength="40" value="<?php echo esc_attr( $defaults['phone'] ); ?>" required />
 					</label>
+
+					<?php $this->render_public_captcha_fields( 'technical_sheet' ); ?>
 
 					<label class="cesarandev-wf-form__privacy">
 						<input type="checkbox" name="privacy_acceptance" value="1" required />
@@ -1937,6 +2176,193 @@ final class CADV_Woo_Functionalities {
 	}
 
 	/**
+	 * Render the signed CAPTCHA and honeypot fields used by public forms.
+	 *
+	 * @param string $scope Form scope.
+	 */
+	private function render_public_captcha_fields( $scope ) {
+		$left    = wp_rand( 2, 9 );
+		$right   = wp_rand( 1, 9 );
+		$payload = $this->base64_url_encode(
+			wp_json_encode(
+				array(
+					'scope'  => sanitize_key( $scope ),
+					'left'   => $left,
+					'right'  => $right,
+					'issued' => time(),
+				)
+			)
+		);
+		$token   = $payload . '.' . hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
+		?>
+		<div class="cesarandev-wf-captcha">
+			<label>
+				<span><?php echo esc_html( sprintf( __( 'Verificacion: cuanto es %1$d + %2$d? *', 'cadv-woo-functionalities' ), $left, $right ) ); ?></span>
+				<input type="text" name="captcha_answer" inputmode="numeric" pattern="[0-9]+" maxlength="2" autocomplete="off" required />
+			</label>
+			<input type="hidden" name="captcha_token" value="<?php echo esc_attr( $token ); ?>" />
+			<label class="cesarandev-wf-honeypot" aria-hidden="true">
+				<span><?php esc_html_e( 'No completes este campo', 'cadv-woo-functionalities' ); ?></span>
+				<input type="text" name="website" value="" tabindex="-1" autocomplete="off" />
+			</label>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Enforce the IP limit and validate the signed CAPTCHA for a public request.
+	 *
+	 * The attempt is counted before CAPTCHA validation so invalid answers cannot be
+	 * brute-forced without consuming the same quota as valid submissions.
+	 *
+	 * @param string $scope Form scope.
+	 * @param int    $limit Maximum attempts per window.
+	 * @return true|WP_Error
+	 */
+	private function validate_public_submission( $scope, $limit ) {
+		$rate_limit = $this->consume_public_rate_limit( $scope, $limit );
+
+		if ( is_wp_error( $rate_limit ) ) {
+			return $rate_limit;
+		}
+
+		$honeypot = isset( $_POST['website'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['website'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		if ( '' !== $honeypot ) {
+			return new WP_Error( 'cesarandev_wf_bot_detected', __( 'No se pudo validar el formulario. Recarga la pagina e intentalo de nuevo.', 'cadv-woo-functionalities' ), 400 );
+		}
+
+		$token  = isset( $_POST['captcha_token'] ) ? sanitize_text_field( wp_unslash( $_POST['captcha_token'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$answer = isset( $_POST['captcha_answer'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['captcha_answer'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		if ( '' === $token || strlen( $token ) > 512 || ! preg_match( '/^[0-9]{1,2}$/', $answer ) ) {
+			return new WP_Error( 'cesarandev_wf_invalid_captcha', __( 'Completa correctamente la verificacion de seguridad.', 'cadv-woo-functionalities' ), 400 );
+		}
+
+		$parts = explode( '.', $token, 2 );
+
+		if ( 2 !== count( $parts ) || ! hash_equals( hash_hmac( 'sha256', $parts[0], wp_salt( 'auth' ) ), $parts[1] ) ) {
+			return new WP_Error( 'cesarandev_wf_invalid_captcha_token', __( 'La verificacion de seguridad no es valida. Recarga la pagina.', 'cadv-woo-functionalities' ), 400 );
+		}
+
+		$decoded = $this->base64_url_decode( $parts[0] );
+		$captcha = false !== $decoded ? json_decode( $decoded, true ) : null;
+		$issued  = is_array( $captcha ) && isset( $captcha['issued'] ) ? absint( $captcha['issued'] ) : 0;
+
+		if (
+			! is_array( $captcha ) ||
+			sanitize_key( $scope ) !== ( $captcha['scope'] ?? '' ) ||
+			$issued > time() + 300 ||
+			$issued < time() - self::CAPTCHA_MAX_AGE ||
+			! isset( $captcha['left'], $captcha['right'] )
+		) {
+			return new WP_Error( 'cesarandev_wf_expired_captcha', __( 'La verificacion de seguridad vencio. Recarga la pagina.', 'cadv-woo-functionalities' ), 400 );
+		}
+
+		$expected = (string) ( absint( $captcha['left'] ) + absint( $captcha['right'] ) );
+
+		if ( ! hash_equals( $expected, $answer ) ) {
+			return new WP_Error( 'cesarandev_wf_wrong_captcha', __( 'La respuesta de verificacion no es correcta.', 'cadv-woo-functionalities' ), 400 );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Consume one attempt from the rate limit assigned to an IP and form.
+	 *
+	 * @param string $scope Form scope.
+	 * @param int    $limit Maximum attempts.
+	 * @return true|WP_Error
+	 */
+	private function consume_public_rate_limit( $scope, $limit ) {
+		$remote_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		$ip             = filter_var( $remote_address, FILTER_VALIDATE_IP ) ? $remote_address : 'unknown';
+
+		/**
+		 * Filter the client IP only when a trusted reverse proxy is configured.
+		 *
+		 * @param string $ip     Validated REMOTE_ADDR value.
+		 * @param string $scope  Public form scope.
+		 */
+		$ip = apply_filters( 'cadv_woo_functionalities_client_ip', $ip, $scope );
+		$ip = filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : 'unknown';
+
+		$key     = 'cadv_wf_rate_' . md5( sanitize_key( $scope ) . '|' . hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) ) );
+		$attempt = (int) get_transient( $key );
+		$limit   = max( 1, absint( $limit ) );
+
+		if ( $attempt >= $limit ) {
+			return new WP_Error( 'cesarandev_wf_rate_limited', __( 'Has realizado demasiados intentos. Espera una hora antes de volver a intentarlo.', 'cadv-woo-functionalities' ), 429 );
+		}
+
+		set_transient( $key, $attempt + 1, self::PUBLIC_RATE_LIMIT_WINDOW );
+
+		return true;
+	}
+
+	/**
+	 * Validate maximum lengths for all user-controlled public fields.
+	 *
+	 * @param array $data Sanitized request data.
+	 * @return true|WP_Error
+	 */
+	private function validate_public_field_lengths( array $data ) {
+		$limits = array(
+			'full_name'        => 120,
+			'company'          => 160,
+			'position'         => 120,
+			'email'            => 254,
+			'phone'            => 40,
+			'product_interest' => 200,
+			'demo_date'        => 10,
+			'crop_type'        => 120,
+			'source_url'       => 2048,
+		);
+
+		foreach ( $limits as $field => $maximum ) {
+			if ( ! isset( $data[ $field ] ) ) {
+				continue;
+			}
+
+			$value_length = function_exists( 'mb_strlen' ) ? mb_strlen( (string) $data[ $field ], 'UTF-8' ) : strlen( (string) $data[ $field ] );
+
+			if ( $value_length > $maximum ) {
+				return new WP_Error( 'cesarandev_wf_field_too_long', __( 'Uno de los campos supera la longitud permitida.', 'cadv-woo-functionalities' ) );
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Encode binary-safe data for a URL token.
+	 *
+	 * @param string $value Raw value.
+	 * @return string
+	 */
+	private function base64_url_encode( $value ) {
+		return rtrim( strtr( base64_encode( (string) $value ), '+/', '-_' ), '=' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+	}
+
+	/**
+	 * Decode URL-safe Base64 data.
+	 *
+	 * @param string $value Encoded value.
+	 * @return string|false
+	 */
+	private function base64_url_decode( $value ) {
+		$value   = strtr( (string) $value, '-_', '+/' );
+		$padding = strlen( $value ) % 4;
+
+		if ( $padding ) {
+			$value .= str_repeat( '=', 4 - $padding );
+		}
+
+		return base64_decode( $value, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+	}
+
+	/**
 	 * Handle technical sheet request.
 	 */
 	public function handle_technical_sheet_request() {
@@ -1946,6 +2372,12 @@ final class CADV_Woo_Functionalities {
 
 		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
 			wp_send_json_error( array( 'message' => __( 'La solicitud no es valida. Recarga la pagina e intentalo de nuevo.', 'cadv-woo-functionalities' ) ), 403 );
+		}
+
+		$security = $this->validate_public_submission( 'technical_sheet', self::TECHNICAL_RATE_LIMIT );
+
+		if ( is_wp_error( $security ) ) {
+			wp_send_json_error( array( 'message' => $security->get_error_message() ), $security->get_error_data() ?: 400 );
 		}
 
 		$data       = $this->normalize_request_data_for_user( $this->hydrate_technical_sheet_data_from_lead( $this->get_request_data() ) );
@@ -2008,6 +2440,12 @@ final class CADV_Woo_Functionalities {
 	public function handle_cta_submission() {
 		if ( ! check_ajax_referer( self::CTA_NONCE_ACTION, 'nonce', false ) ) {
 			wp_send_json_error( array( 'message' => __( 'La solicitud no es valida. Recarga la pagina e intentalo de nuevo.', 'cadv-woo-functionalities' ) ), 403 );
+		}
+
+		$security = $this->validate_public_submission( 'cta', self::CTA_RATE_LIMIT );
+
+		if ( is_wp_error( $security ) ) {
+			wp_send_json_error( array( 'message' => $security->get_error_message() ), $security->get_error_data() ?: 400 );
 		}
 
 		$data       = $this->get_cta_request_data();
@@ -2110,6 +2548,12 @@ final class CADV_Woo_Functionalities {
 			return new WP_Error( 'cesarandev_wf_cta_privacy_required', __( 'Debes aceptar la politica de privacidad.', 'cadv-woo-functionalities' ) );
 		}
 
+		$lengths = $this->validate_public_field_lengths( $data );
+
+		if ( is_wp_error( $lengths ) ) {
+			return $lengths;
+		}
+
 		return true;
 	}
 
@@ -2153,6 +2597,7 @@ final class CADV_Woo_Functionalities {
 			'demo_date'        => $data['demo_date'],
 			'crop_type'        => $data['crop_type'],
 		);
+		$interactions = array_slice( $interactions, -self::MAX_LEAD_INTERACTIONS );
 
 		$fields = array(
 			'_cesarandev_wf_full_name'        => $data['full_name'],
@@ -2335,6 +2780,12 @@ final class CADV_Woo_Functionalities {
 			return new WP_Error( 'cesarandev_wf_privacy_required', __( 'Debes aceptar la politica de privacidad.', 'cadv-woo-functionalities' ) );
 		}
 
+		$lengths = $this->validate_public_field_lengths( $data );
+
+		if ( is_wp_error( $lengths ) ) {
+			return $lengths;
+		}
+
 		return true;
 	}
 
@@ -2352,7 +2803,10 @@ final class CADV_Woo_Functionalities {
 		$existing_user = get_user_by( 'email', $data['email'] );
 
 		if ( $existing_user instanceof WP_User ) {
-			return (int) $existing_user->ID;
+			return new WP_Error(
+				'cesarandev_wf_existing_account',
+				__( 'Ya existe una cuenta con este correo. Inicia sesion o recupera tu contrasena para continuar.', 'cadv-woo-functionalities' )
+			);
 		}
 
 		$name_parts = $this->split_full_name( $data['full_name'] );
@@ -2610,7 +3064,7 @@ final class CADV_Woo_Functionalities {
 
 		$output = fopen( 'php://output', 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 
-		fputcsv(
+		$this->write_csv_row(
 			$output,
 			array(
 				'Tipo de registro',
@@ -2641,7 +3095,7 @@ final class CADV_Woo_Functionalities {
 		);
 
 		foreach ( $rows as $row ) {
-			fputcsv(
+			$this->write_csv_row(
 				$output,
 				array(
 					'Ficha tecnica',
@@ -2673,7 +3127,7 @@ final class CADV_Woo_Functionalities {
 		}
 
 		foreach ( $leads as $lead ) {
-			fputcsv(
+			$this->write_csv_row(
 				$output,
 				array(
 					'Lead CTA',
@@ -2706,6 +3160,33 @@ final class CADV_Woo_Functionalities {
 
 		fclose( $output ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		exit;
+	}
+
+	/**
+	 * Write a CSV row after neutralizing spreadsheet formulas.
+	 *
+	 * @param resource $output Output stream.
+	 * @param array    $row    CSV cells.
+	 */
+	private function write_csv_row( $output, array $row ) {
+		$row = array_map( array( $this, 'sanitize_csv_cell' ), $row );
+		fputcsv( $output, $row );
+	}
+
+	/**
+	 * Prevent CSV cells controlled by users from being interpreted as formulas.
+	 *
+	 * @param mixed $value Cell value.
+	 * @return string
+	 */
+	private function sanitize_csv_cell( $value ) {
+		$value = str_replace( "\0", '', (string) $value );
+
+		if ( preg_match( '/^[\x{FEFF}\s]*[=+\-@]/u', $value ) ) {
+			$value = "'" . $value;
+		}
+
+		return $value;
 	}
 
 	/**
@@ -3668,7 +4149,10 @@ final class CADV_Woo_Functionalities {
 			wc_add_notice( __( 'Tu solicitud de eliminacion fue recibida. Nuestro equipo la revisara desde el CRM.', 'cadv-woo-functionalities' ), 'success' );
 		}
 
-		wp_safe_redirect( wc_get_account_endpoint_url( 'edit-account' ) );
+		$default_redirect = wc_get_account_endpoint_url( 'edit-account' );
+		$redirect_to      = isset( $_POST['redirect_to'] ) ? wp_validate_redirect( esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ), $default_redirect ) : $default_redirect;
+
+		wp_safe_redirect( $redirect_to );
 		exit;
 	}
 

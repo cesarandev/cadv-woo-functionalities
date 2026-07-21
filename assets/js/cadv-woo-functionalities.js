@@ -98,6 +98,10 @@
 				return getMessage('privacy', 'Debes aceptar la politica de privacidad.');
 			}
 
+			if (!String(formData.get('captcha_answer') || '').trim()) {
+				return getMessage('captcha', 'Completa la verificacion de seguridad.');
+			}
+
 			return '';
 		}
 
@@ -236,6 +240,11 @@
 
 				if (!formData.get('privacy_acceptance')) {
 					setMessage(message, getMessage('privacy', 'Debes aceptar la politica de privacidad.'), 'error');
+					return;
+				}
+
+				if (!String(formData.get('captcha_answer') || '').trim()) {
+					setMessage(message, getMessage('captcha', 'Completa la verificacion de seguridad.'), 'error');
 					return;
 				}
 
