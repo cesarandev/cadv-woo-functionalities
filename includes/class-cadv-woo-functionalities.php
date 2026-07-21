@@ -25,6 +25,7 @@ final class CADV_Woo_Functionalities {
 	const DELETE_ACCOUNT_ACTION    = 'cesarandev_wf_request_account_deletion';
 	const DELETE_ACCOUNT_NONCE     = 'cesarandev_wf_request_account_deletion';
 	const PREVIEW_ACTION           = 'cadv_preview_technical_sheet';
+	const PREVIEW_PAGE_ACTION      = 'cadv_preview_technical_sheet_page';
 	const PREVIEW_NONCE_ACTION     = 'cadv_preview_technical_sheet';
 	const PDF_PREVIEW_STATS_META   = '_cesarandev_wf_pdf_preview_stats';
 	const ORDER_SOURCE             = 'cesarandev_technical_sheet_request';
@@ -107,6 +108,8 @@ final class CADV_Woo_Functionalities {
 		add_action( 'admin_post_' . self::DELETE_ACCOUNT_ACTION, array( $this, 'handle_account_deletion_request' ) );
 		add_action( 'admin_post_' . self::PREVIEW_ACTION, array( $this, 'handle_technical_sheet_preview' ) );
 		add_action( 'admin_post_nopriv_' . self::PREVIEW_ACTION, array( $this, 'handle_technical_sheet_preview' ) );
+		add_action( 'admin_post_' . self::PREVIEW_PAGE_ACTION, array( $this, 'handle_technical_sheet_preview_page' ) );
+		add_action( 'admin_post_nopriv_' . self::PREVIEW_PAGE_ACTION, array( $this, 'handle_technical_sheet_preview_page' ) );
 		add_shortcode( 'cadv_ficha_tecnica', array( $this, 'render_actions_shortcode' ) );
 		add_shortcode( 'cadv_registro_ica', array( $this, 'render_ica_shortcode' ) );
 		add_shortcode( 'cadv_categoria_producto', array( $this, 'render_product_category_shortcode' ) );
@@ -1925,7 +1928,7 @@ final class CADV_Woo_Functionalities {
 	 * @return string
 	 */
 	private function get_customer_download_preview_url( array $download ) {
-		if ( ! $this->resolve_customer_download_pdf_path( $download ) ) {
+		if ( ! $this->protected_pdf_renderer_is_available() || ! $this->resolve_customer_download_pdf_path( $download ) ) {
 			return '';
 		}
 
@@ -1951,12 +1954,136 @@ final class CADV_Woo_Functionalities {
 	}
 
 	/**
-	 * Serve a permitted PDF inline without exposing its storage URL.
+	 * Render the protected image-based PDF viewer.
 	 */
 	public function handle_technical_sheet_preview() {
+		$request    = $this->get_authorized_technical_sheet_preview_request();
+		$page_count = $this->get_protected_pdf_page_count( $request['file_path'] );
+
+		if ( ! $page_count ) {
+			$this->stop_technical_sheet_preview( __( 'El servidor no pudo preparar el visor protegido de esta ficha.', 'cadv-woo-functionalities' ), 503 );
+		}
+
+		$this->track_technical_sheet_preview( $request['download'] );
+
+		$title = ! empty( $request['download']['download_name'] ) ? sanitize_text_field( $request['download']['download_name'] ) : __( 'Ficha tecnica', 'cadv-woo-functionalities' );
+		$user  = wp_get_current_user();
+
+		while ( ob_get_level() ) {
+			ob_end_clean();
+		}
+
+		nocache_headers();
+		header( 'Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0', true );
+		header( 'Content-Type: text/html; charset=' . get_option( 'blog_charset' ) );
+		header( 'X-Content-Type-Options: nosniff' );
+		header( 'X-Frame-Options: DENY' );
+		header( "Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'" );
+		header( 'Referrer-Policy: no-referrer' );
+		header( 'X-Robots-Tag: noindex, nofollow, noarchive', true );
+		?>
+		<!doctype html>
+		<html lang="es">
+		<head>
+			<meta charset="<?php echo esc_attr( get_option( 'blog_charset' ) ); ?>" />
+			<meta name="viewport" content="width=device-width, initial-scale=1" />
+			<meta name="robots" content="noindex,nofollow,noarchive" />
+			<title><?php echo esc_html( $title ); ?></title>
+			<style>
+				:root{color-scheme:light;--green:#203212;--paper:#fff;--canvas:#e9ede7;--muted:#657061}*{box-sizing:border-box}html,body{margin:0;min-height:100%;overscroll-behavior:none}body{background:var(--canvas);color:#243020;font-family:Arial,sans-serif;user-select:none;-webkit-user-select:none}.cadv-viewer__bar{align-items:center;background:var(--green);box-shadow:0 2px 14px rgba(0,0,0,.2);color:#fff;display:flex;gap:20px;justify-content:space-between;left:0;padding:15px clamp(16px,4vw,48px);position:sticky;right:0;top:0;z-index:10}.cadv-viewer__bar strong,.cadv-viewer__bar span{display:block}.cadv-viewer__bar strong{font-size:16px}.cadv-viewer__bar span{font-size:11px;margin-top:4px;opacity:.8}.cadv-viewer__status{border:1px solid rgba(255,255,255,.35);border-radius:999px;flex:0 0 auto;font-size:11px;font-weight:700;padding:7px 11px}.cadv-viewer__pages{display:grid;gap:24px;margin:0 auto;max-width:1220px;padding:28px clamp(12px,3vw,34px) 60px}.cadv-viewer__page{background:var(--paper);box-shadow:0 5px 22px rgba(27,42,20,.14);margin:0;position:relative}.cadv-viewer__page img{display:block;height:auto;pointer-events:none;width:100%}.cadv-viewer__page figcaption{background:rgba(32,50,18,.86);bottom:12px;color:#fff;font-size:11px;padding:6px 9px;pointer-events:none;position:absolute;right:12px}.cadv-viewer__watermark{color:rgba(32,50,18,.13);font-size:clamp(18px,3vw,38px);font-weight:800;left:50%;letter-spacing:.08em;pointer-events:none;position:fixed;text-transform:uppercase;top:52%;transform:translate(-50%,-50%) rotate(-28deg);white-space:nowrap;z-index:9}@media(max-width:600px){.cadv-viewer__bar{align-items:flex-start;flex-direction:column;gap:9px}.cadv-viewer__status{align-self:flex-start}.cadv-viewer__pages{gap:14px;padding-top:14px}}@media print{html,body{display:none!important}}
+			</style>
+		</head>
+		<body data-protected-viewer>
+			<header class="cadv-viewer__bar">
+				<div><strong><?php echo esc_html( $title ); ?></strong><span><?php esc_html_e( 'Vista protegida: no se entrega el archivo PDF original.', 'cadv-woo-functionalities' ); ?></span></div>
+				<div class="cadv-viewer__status"><?php echo esc_html( sprintf( _n( '%d pagina', '%d paginas', $page_count, 'cadv-woo-functionalities' ), $page_count ) ); ?></div>
+			</header>
+			<div class="cadv-viewer__watermark" aria-hidden="true"><?php echo esc_html( sprintf( __( 'Documento protegido - %s', 'cadv-woo-functionalities' ), $user->user_email ) ); ?></div>
+			<main class="cadv-viewer__pages">
+				<?php for ( $page = 1; $page <= $page_count; $page++ ) : ?>
+					<figure class="cadv-viewer__page">
+						<img src="<?php echo esc_url( $this->get_protected_pdf_page_url( $request, $page ) ); ?>" alt="<?php echo esc_attr( sprintf( __( 'Pagina %1$d de %2$d', 'cadv-woo-functionalities' ), $page, $page_count ) ); ?>" loading="<?php echo 1 === $page ? 'eager' : 'lazy'; ?>" draggable="false" />
+						<figcaption><?php echo esc_html( sprintf( __( 'Pagina %1$d de %2$d', 'cadv-woo-functionalities' ), $page, $page_count ) ); ?></figcaption>
+					</figure>
+				<?php endfor; ?>
+			</main>
+			<script>
+				(function(){'use strict';document.addEventListener('contextmenu',function(e){e.preventDefault();});document.addEventListener('dragstart',function(e){e.preventDefault();});document.addEventListener('keydown',function(e){var key=(e.key||'').toLowerCase();if((e.ctrlKey||e.metaKey)&&(key==='p'||key==='s'||key==='u')){e.preventDefault();e.stopPropagation();}});window.addEventListener('beforeprint',function(){document.body.hidden=true;});window.addEventListener('afterprint',function(){document.body.hidden=false;});}());
+			</script>
+		</body>
+		</html>
+		<?php
+		exit;
+	}
+
+	/**
+	 * Render one authorized PDF page as a JPEG image.
+	 */
+	public function handle_technical_sheet_preview_page() {
+		$request = $this->get_authorized_technical_sheet_preview_request();
+		$page    = isset( $_GET['page'] ) && is_string( $_GET['page'] ) ? absint( wp_unslash( $_GET['page'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Covered by the resource-specific nonce.
+		$count   = $this->get_protected_pdf_page_count( $request['file_path'] );
+
+		if ( ! $page || $page > $count ) {
+			$this->stop_technical_sheet_preview( __( 'La pagina solicitada no existe.', 'cadv-woo-functionalities' ), 404 );
+		}
+
+		try {
+			$image = new Imagick();
+			$image->setResolution( 144, 144 );
+			$image->readImage( $request['file_path'] . '[' . ( $page - 1 ) . ']' );
+			$image->setImageBackgroundColor( 'white' );
+			$image->setImageAlphaChannel( Imagick::ALPHACHANNEL_REMOVE );
+			$image->setImageFormat( 'jpeg' );
+			$image->setImageCompressionQuality( 88 );
+
+			if ( $image->getImageWidth() > 1800 ) {
+				$image->thumbnailImage( 1800, 0 );
+			}
+
+			$image->stripImage();
+			$blob = $image->getImageBlob();
+			$image->clear();
+			$image->destroy();
+		} catch ( Throwable $error ) {
+			$this->stop_technical_sheet_preview( __( 'No fue posible renderizar esta pagina del documento.', 'cadv-woo-functionalities' ), 500 );
+		}
+
+		if ( empty( $blob ) ) {
+			$this->stop_technical_sheet_preview( __( 'El servidor genero una pagina vacia para este documento.', 'cadv-woo-functionalities' ), 500 );
+		}
+
+		while ( ob_get_level() ) {
+			ob_end_clean();
+		}
+
+		nocache_headers();
+		header( 'Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0', true );
+		header( 'Content-Type: image/jpeg' );
+		header( 'Content-Disposition: inline' );
+		header( 'Content-Length: ' . strlen( $blob ) );
+		header( 'X-Content-Type-Options: nosniff' );
+		header( 'X-Frame-Options: DENY' );
+		header( "Content-Security-Policy: default-src 'none'; frame-ancestors 'none'" );
+		header( 'Referrer-Policy: no-referrer' );
+		header( 'X-Robots-Tag: noindex, nofollow, noarchive', true );
+		echo $blob; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Binary JPEG generated from an authorized local PDF page.
+		exit;
+	}
+
+	/**
+	 * Validate the signed request and resolve a download owned by the current user.
+	 *
+	 * @return array
+	 */
+	private function get_authorized_technical_sheet_preview_request() {
 		if ( ! is_user_logged_in() ) {
 			wp_safe_redirect( $this->get_my_account_url() );
 			exit;
+		}
+
+		if ( ! $this->protected_pdf_renderer_is_available() ) {
+			$this->stop_technical_sheet_preview( __( 'El servidor no tiene disponible el motor de vista protegida.', 'cadv-woo-functionalities' ), 503 );
 		}
 
 		$download_id = isset( $_GET['download_id'] ) && is_string( $_GET['download_id'] ) ? sanitize_text_field( wp_unslash( $_GET['download_id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified below with a resource-specific nonce.
@@ -1992,32 +2119,83 @@ final class CADV_Woo_Functionalities {
 			$this->stop_technical_sheet_preview( __( 'La vista previa solo esta disponible para archivos PDF locales y validos.', 'cadv-woo-functionalities' ), 404 );
 		}
 
-		$this->track_technical_sheet_preview( $matched_download );
+		return array(
+			'download'    => $matched_download,
+			'download_id' => $download_id,
+			'order_id'    => $order_id,
+			'product_id'  => $product_id,
+			'nonce'       => $nonce,
+			'file_path'   => $file_path,
+		);
+	}
 
-		$filename = sanitize_file_name( wp_basename( $file_path ) );
-		$filename = $filename ? $filename : 'ficha-tecnica.pdf';
-		$filesize = filesize( $file_path );
+	/**
+	 * Build a signed URL for one rendered page.
+	 *
+	 * @param array $request Authorized preview request.
+	 * @param int   $page    One-based page number.
+	 * @return string
+	 */
+	private function get_protected_pdf_page_url( array $request, $page ) {
+		return add_query_arg(
+			array(
+				'action'      => self::PREVIEW_PAGE_ACTION,
+				'download_id' => $request['download_id'],
+				'order_id'    => $request['order_id'],
+				'product_id'  => $request['product_id'],
+				'page'        => absint( $page ),
+				'_wpnonce'    => $request['nonce'],
+			),
+			admin_url( 'admin-post.php' )
+		);
+	}
 
-		while ( ob_get_level() ) {
-			ob_end_clean();
+	/**
+	 * Get and cache the number of pages in a protected PDF.
+	 *
+	 * @param string $file_path Local PDF path.
+	 * @return int
+	 */
+	private function get_protected_pdf_page_count( $file_path ) {
+		$cache_key = 'cadv_pdf_pages_' . md5( $file_path . '|' . (string) filemtime( $file_path ) . '|' . (string) filesize( $file_path ) );
+		$cached    = get_transient( $cache_key );
+
+		if ( false !== $cached ) {
+			return absint( $cached );
 		}
 
-		nocache_headers();
-		header( 'Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0', true );
-		header( 'Content-Type: application/pdf' );
-		header( 'Content-Disposition: inline; filename="' . $filename . '"; filename*=UTF-8\'\'' . rawurlencode( $filename ) );
-		header( 'X-Content-Type-Options: nosniff' );
-		header( 'X-Frame-Options: SAMEORIGIN' );
-		header( "Content-Security-Policy: frame-ancestors 'self'" );
-		header( 'Referrer-Policy: no-referrer' );
-		header( 'X-Robots-Tag: noindex, nofollow, noarchive', true );
-
-		if ( false !== $filesize ) {
-			header( 'Content-Length: ' . (string) $filesize );
+		try {
+			$pdf = new Imagick();
+			$pdf->pingImage( $file_path );
+			$count = absint( $pdf->getNumberImages() );
+			$pdf->clear();
+			$pdf->destroy();
+		} catch ( Throwable $error ) {
+			return 0;
 		}
 
-		readfile( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streaming an already-authorized local PDF response.
-		exit;
+		if ( $count ) {
+			set_transient( $cache_key, $count, HOUR_IN_SECONDS );
+		}
+
+		return $count;
+	}
+
+	/**
+	 * Check whether server-side PDF rasterization is available.
+	 *
+	 * @return bool
+	 */
+	private function protected_pdf_renderer_is_available() {
+		if ( ! class_exists( 'Imagick' ) ) {
+			return false;
+		}
+
+		try {
+			return ! empty( Imagick::queryFormats( 'PDF' ) );
+		} catch ( Throwable $error ) {
+			return false;
+		}
 	}
 
 	/**

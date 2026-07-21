@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.50" src="https://img.shields.io/badge/versión-1.1.50-315c27?style=flat-square">
+  <img alt="Versión 1.1.51" src="https://img.shields.io/badge/versión-1.1.51-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -501,7 +501,9 @@ También se admite `login_image="https://dominio.com/imagen.jpg"` o una ruta loc
 
 Los formularios de acceso, recuperación, restablecimiento y solicitud de eliminación incluyen Google reCAPTCHA v2 cuando sus claves están configuradas, además de honeypot y límites por IP. Las contraseñas nuevas deben tener al menos 12 caracteres.
 
-En **Fichas tecnicas**, cada PDF local ofrece **Vista previa** y **Descargar**. La vista previa se abre en una pestaña nueva mediante una URL firmada, vuelve a validar la sesión y los permisos del cliente y transmite el archivo en línea sin publicar su ruta de almacenamiento. Cada apertura queda registrada por ficha en el CRM con cantidad, primera vista y última vista; el estado cambia a **Vista** hasta que exista una descarga.
+En **Fichas tecnicas**, cada PDF local ofrece **Vista previa** y **Descargar**. La vista previa abre un visor propio mediante una URL firmada, vuelve a validar la sesión y los permisos del cliente y renderiza cada página como una imagen protegida en el servidor; el PDF original nunca se entrega al visor. La interfaz no incluye acciones de descarga o impresión, bloquea los atajos habituales y oculta todo el contenido al imprimir. Cada apertura queda registrada por ficha en el CRM con cantidad, primera vista y última vista; el estado cambia a **Vista** hasta que exista una descarga.
+
+El visor protegido requiere que PHP tenga habilitada la extensión **Imagick** con soporte para PDF mediante **Ghostscript**. Si el motor no está disponible o el archivo no es un PDF local válido, el plugin no muestra la acción de vista previa y conserva únicamente la descarga autorizada de WooCommerce.
 
 Configura las claves de tipo **reCAPTCHA v2 → No soy un robot** en **WooCommerce → CADV Woo Functionalities → Google reCAPTCHA v2**. El checkbox puede abrir el reto de selección de imágenes cuando Google lo considere necesario. Si falta alguna clave, el plugin conserva temporalmente la verificación matemática firmada para no dejar los formularios desprotegidos. También puedes definir las constantes `CADV_RECAPTCHA_SITE_KEY` y `CADV_RECAPTCHA_SECRET_KEY` en `wp-config.php`; estas tienen prioridad sobre los campos administrativos.
 
