@@ -571,11 +571,11 @@
 	border-radius: 0;
 	box-sizing: border-box;
 	box-shadow: none;
-	margin-left: calc(50% - 50vw);
-	max-width: none;
+	margin-left: 0;
+	max-width: 100%;
 	overflow: hidden;
 	padding: 0;
-	width: 100vw;
+	width: 100%;
 }
 
 .cesarandev-wf-auth {
@@ -1420,8 +1420,8 @@ body.cesarandev-wf-modal-open {
 
 @media (max-width: 767px) {
 	.cesarandev-wf-my-account--login {
-		margin-left: calc(50% - 50vw);
-		width: 100vw;
+		margin-left: 0;
+		width: 100%;
 	}
 
 	.cesarandev-wf-auth {
@@ -1680,6 +1680,19 @@ body.cesarandev-wf-modal-open {
 	grid-column: 1 / -1;
 }
 
+.cesarandev-wf-recaptcha {
+	box-sizing: border-box;
+	grid-column: 1 / -1;
+	margin: 7px 0 3px;
+	max-width: 100%;
+	min-height: 78px;
+	overflow: visible;
+}
+
+.cesarandev-wf-recaptcha__widget {
+	max-width: 100%;
+}
+
 .cesarandev-wf-captcha > label:not(.cesarandev-wf-honeypot) {
 	display: grid;
 	gap: 7px;
@@ -1695,4 +1708,17 @@ body.cesarandev-wf-modal-open {
 	pointer-events: none !important;
 	position: absolute !important;
 	top: auto !important;
+}
+
+@media (max-width: 350px) {
+	.cesarandev-wf-recaptcha {
+		min-height: 68px;
+		overflow: hidden;
+	}
+
+	.cesarandev-wf-recaptcha__widget {
+		transform: scale(0.86);
+		transform-origin: left top;
+		width: 304px;
+	}
 }

@@ -47,6 +47,45 @@
 		});
 	}
 
+	function initRecaptchaWidgets() {
+		var widgets;
+
+		if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function') {
+			return;
+		}
+
+		widgets = document.querySelectorAll('.cesarandev-wf-recaptcha__widget:not([data-widget-id])');
+
+		Array.prototype.forEach.call(widgets, function (widget) {
+			var widgetId = window.grecaptcha.render(widget, {
+				sitekey: widget.getAttribute('data-sitekey') || '',
+				theme: widget.getAttribute('data-theme') || 'light'
+			});
+
+			widget.setAttribute('data-widget-id', String(widgetId));
+		});
+	}
+
+	function resetFormRecaptcha(form) {
+		var widget = form ? form.querySelector('.cesarandev-wf-recaptcha__widget[data-widget-id]') : null;
+		var widgetId = widget ? parseInt(widget.getAttribute('data-widget-id'), 10) : NaN;
+
+		if (window.grecaptcha && typeof window.grecaptcha.reset === 'function' && !Number.isNaN(widgetId)) {
+			window.grecaptcha.reset(widgetId);
+		}
+	}
+
+	function hasCaptchaResponse(formData) {
+		return Boolean(
+			String(formData.get('captcha_answer') || '').trim() ||
+			String(formData.get('g-recaptcha-response') || '').trim()
+		);
+	}
+
+	window.CadvRecaptchaOnload = function () {
+		initRecaptchaWidgets();
+	};
+
 	function initTechnicalSheetModal() {
 		var modal = document.querySelector('[data-cesarandev-wf-modal]');
 		var form = document.querySelector('[data-cesarandev-wf-form]');
@@ -98,7 +137,7 @@
 				return getMessage('privacy', 'Debes aceptar la politica de privacidad.');
 			}
 
-			if (!String(formData.get('captcha_answer') || '').trim()) {
+			if (!hasCaptchaResponse(formData)) {
 				return getMessage('captcha', 'Completa la verificacion de seguridad.');
 			}
 
@@ -148,6 +187,7 @@
 				})
 				.finally(function () {
 					setSubmitting(form, false);
+					resetFormRecaptcha(form);
 				});
 		});
 
@@ -243,7 +283,7 @@
 					return;
 				}
 
-				if (!String(formData.get('captcha_answer') || '').trim()) {
+				if (!hasCaptchaResponse(formData)) {
 					setMessage(message, getMessage('captcha', 'Completa la verificacion de seguridad.'), 'error');
 					return;
 				}
@@ -270,6 +310,7 @@
 					})
 					.finally(function () {
 						setSubmitting(form, false);
+						resetFormRecaptcha(form);
 					});
 			});
 		});
@@ -404,4 +445,5 @@
 	initCtaModals();
 	initCtaForms();
 	initAccountPasswordToggles();
+	initRecaptchaWidgets();
 }());

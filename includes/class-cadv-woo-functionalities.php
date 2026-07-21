@@ -10,11 +10,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class CADV_Woo_Functionalities {
-	const OPTION_PHONE             = 'cadv_woo_functionalities_whatsapp_phone';
-	const OPTION_MESSAGE_TEMPLATE  = 'cadv_woo_functionalities_message_template';
-	const AJAX_ACTION              = 'cesarandev_wf_request_technical_sheet';
-	const NONCE_ACTION             = 'cesarandev_wf_request_technical_sheet';
-	const CTA_ACTION               = 'cesarandev_wf_submit_cta';
+	const OPTION_PHONE                = 'cadv_woo_functionalities_whatsapp_phone';
+	const OPTION_MESSAGE_TEMPLATE     = 'cadv_woo_functionalities_message_template';
+	const OPTION_RECAPTCHA_SITE_KEY   = 'cadv_woo_functionalities_recaptcha_site_key';
+	const OPTION_RECAPTCHA_SECRET_KEY = 'cadv_woo_functionalities_recaptcha_secret_key';
+	const AJAX_ACTION                 = 'cesarandev_wf_request_technical_sheet';
+	const NONCE_ACTION                = 'cesarandev_wf_request_technical_sheet';
+	const CTA_ACTION                  = 'cesarandev_wf_submit_cta';
 	const CTA_NONCE_ACTION         = 'cesarandev_wf_submit_cta';
 	const EXPORT_ACTION            = 'cesarandev_wf_export_requests';
 	const CRM_UPDATE_ACTION        = 'cesarandev_wf_update_crm_request';
@@ -223,6 +225,26 @@ final class CADV_Woo_Functionalities {
 			)
 		);
 
+		register_setting(
+			'cadv_woo_functionalities_settings',
+			self::OPTION_RECAPTCHA_SITE_KEY,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => '',
+			)
+		);
+
+		register_setting(
+			'cadv_woo_functionalities_settings',
+			self::OPTION_RECAPTCHA_SECRET_KEY,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+				'default'           => '',
+			)
+		);
+
 		add_settings_section(
 			'cadv_woo_functionalities_whatsapp_section',
 			__( 'Configuracion de WhatsApp', 'cadv-woo-functionalities' ),
@@ -244,6 +266,29 @@ final class CADV_Woo_Functionalities {
 			array( $this, 'render_message_template_field' ),
 			'cadv-woo-functionalities',
 			'cadv_woo_functionalities_whatsapp_section'
+		);
+
+		add_settings_section(
+			'cadv_woo_functionalities_recaptcha_section',
+			__( 'Google reCAPTCHA v2', 'cadv-woo-functionalities' ),
+			array( $this, 'render_recaptcha_settings_intro' ),
+			'cadv-woo-functionalities'
+		);
+
+		add_settings_field(
+			self::OPTION_RECAPTCHA_SITE_KEY,
+			__( 'Clave del sitio', 'cadv-woo-functionalities' ),
+			array( $this, 'render_recaptcha_site_key_field' ),
+			'cadv-woo-functionalities',
+			'cadv_woo_functionalities_recaptcha_section'
+		);
+
+		add_settings_field(
+			self::OPTION_RECAPTCHA_SECRET_KEY,
+			__( 'Clave secreta', 'cadv-woo-functionalities' ),
+			array( $this, 'render_recaptcha_secret_key_field' ),
+			'cadv-woo-functionalities',
+			'cadv_woo_functionalities_recaptcha_section'
 		);
 	}
 
@@ -303,6 +348,44 @@ final class CADV_Woo_Functionalities {
 		);
 
 		echo '<p class="description">' . esc_html__( 'Puedes usar las variables {product_name} y {product_url}.', 'cadv-woo-functionalities' ) . '</p>';
+	}
+
+	/**
+	 * Render reCAPTCHA settings instructions.
+	 */
+	public function render_recaptcha_settings_intro() {
+		printf(
+			'<p>%1$s <a href="%2$s" target="_blank" rel="noopener noreferrer">%3$s</a></p>',
+			esc_html__( 'Crea credenciales de tipo reCAPTCHA v2 con la opcion "No soy un robot". Al guardar ambas claves, el reto visual reemplaza automaticamente la verificacion matematica.', 'cadv-woo-functionalities' ),
+			esc_url( 'https://www.google.com/recaptcha/admin/create' ),
+			esc_html__( 'Crear claves en Google', 'cadv-woo-functionalities' )
+		);
+
+		if ( defined( 'CADV_RECAPTCHA_SITE_KEY' ) || defined( 'CADV_RECAPTCHA_SECRET_KEY' ) ) {
+			echo '<p class="description">' . esc_html__( 'Las constantes CADV_RECAPTCHA_SITE_KEY y CADV_RECAPTCHA_SECRET_KEY definidas en wp-config.php tienen prioridad sobre estos campos.', 'cadv-woo-functionalities' ) . '</p>';
+		}
+	}
+
+	/**
+	 * Render the public reCAPTCHA site-key field.
+	 */
+	public function render_recaptcha_site_key_field() {
+		printf(
+			'<input type="text" id="%1$s" name="%1$s" value="%2$s" class="regular-text code" autocomplete="off" spellcheck="false" />',
+			esc_attr( self::OPTION_RECAPTCHA_SITE_KEY ),
+			esc_attr( get_option( self::OPTION_RECAPTCHA_SITE_KEY, '' ) )
+		);
+	}
+
+	/**
+	 * Render the private reCAPTCHA secret-key field.
+	 */
+	public function render_recaptcha_secret_key_field() {
+		printf(
+			'<input type="password" id="%1$s" name="%1$s" value="%2$s" class="regular-text code" autocomplete="new-password" spellcheck="false" />',
+			esc_attr( self::OPTION_RECAPTCHA_SECRET_KEY ),
+			esc_attr( get_option( self::OPTION_RECAPTCHA_SECRET_KEY, '' ) )
+		);
 	}
 
 	/**
@@ -2522,6 +2605,28 @@ final class CADV_Woo_Functionalities {
 	 * @param string $scope Form scope.
 	 */
 	private function render_public_captcha_fields( $scope ) {
+		if ( $this->is_recaptcha_configured() ) {
+			$this->enqueue_frontend_assets();
+			wp_enqueue_script(
+				'cadv-google-recaptcha',
+				'https://www.google.com/recaptcha/api.js?onload=CadvRecaptchaOnload&render=explicit',
+				array( 'cadv-woo-functionalities' ),
+				null,
+				true
+			);
+			wp_script_add_data( 'cadv-google-recaptcha', 'strategy', 'defer' );
+			?>
+			<div class="cesarandev-wf-recaptcha" data-cadv-recaptcha>
+				<div class="cesarandev-wf-recaptcha__widget" data-sitekey="<?php echo esc_attr( $this->get_recaptcha_site_key() ); ?>" data-theme="light"></div>
+			</div>
+			<label class="cesarandev-wf-honeypot" aria-hidden="true">
+				<span><?php esc_html_e( 'No completes este campo', 'cadv-woo-functionalities' ); ?></span>
+				<input type="text" name="website" value="" tabindex="-1" autocomplete="off" />
+			</label>
+			<?php
+			return;
+		}
+
 		$left    = wp_rand( 2, 9 );
 		$right   = wp_rand( 1, 9 );
 		$payload = $this->base64_url_encode(
@@ -2573,6 +2678,10 @@ final class CADV_Woo_Functionalities {
 			return new WP_Error( 'cesarandev_wf_bot_detected', __( 'No se pudo validar el formulario. Recarga la pagina e intentalo de nuevo.', 'cadv-woo-functionalities' ), 400 );
 		}
 
+		if ( $this->is_recaptcha_configured() ) {
+			return $this->validate_recaptcha_response( $scope );
+		}
+
 		$token  = sanitize_text_field( $this->get_post_string( 'captcha_token' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$answer = trim( sanitize_text_field( $this->get_post_string( 'captcha_answer' ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
@@ -2610,6 +2719,83 @@ final class CADV_Woo_Functionalities {
 	}
 
 	/**
+	 * Check whether both Google reCAPTCHA v2 keys are available.
+	 *
+	 * @return bool
+	 */
+	private function is_recaptcha_configured() {
+		return '' !== $this->get_recaptcha_site_key() && '' !== $this->get_recaptcha_secret_key();
+	}
+
+	/**
+	 * Get the public Google reCAPTCHA site key.
+	 *
+	 * @return string
+	 */
+	private function get_recaptcha_site_key() {
+		$value = defined( 'CADV_RECAPTCHA_SITE_KEY' ) ? CADV_RECAPTCHA_SITE_KEY : get_option( self::OPTION_RECAPTCHA_SITE_KEY, '' );
+
+		return trim( sanitize_text_field( (string) $value ) );
+	}
+
+	/**
+	 * Get the private Google reCAPTCHA secret key.
+	 *
+	 * @return string
+	 */
+	private function get_recaptcha_secret_key() {
+		$value = defined( 'CADV_RECAPTCHA_SECRET_KEY' ) ? CADV_RECAPTCHA_SECRET_KEY : get_option( self::OPTION_RECAPTCHA_SECRET_KEY, '' );
+
+		return trim( sanitize_text_field( (string) $value ) );
+	}
+
+	/**
+	 * Validate a Google reCAPTCHA v2 response with Google's verification API.
+	 *
+	 * @param string $scope Protected form scope.
+	 * @return true|WP_Error
+	 */
+	private function validate_recaptcha_response( $scope ) {
+		$token = sanitize_text_field( $this->get_post_string( 'g-recaptcha-response' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		if ( '' === $token || strlen( $token ) > 8192 ) {
+			return new WP_Error( 'cadv_recaptcha_missing', __( 'Completa la verificacion "No soy un robot".', 'cadv-woo-functionalities' ), 400 );
+		}
+
+		$body = array(
+			'secret'   => $this->get_recaptcha_secret_key(),
+			'response' => $token,
+		);
+		$client_ip = $this->get_public_client_ip( $scope );
+
+		if ( 'unknown' !== $client_ip ) {
+			$body['remoteip'] = $client_ip;
+		}
+
+		$response = wp_remote_post(
+			'https://www.google.com/recaptcha/api/siteverify',
+			array(
+				'timeout' => 10,
+				'body'    => $body,
+			)
+		);
+
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			return new WP_Error( 'cadv_recaptcha_unavailable', __( 'No pudimos comprobar la verificacion de seguridad. Intentalo nuevamente.', 'cadv-woo-functionalities' ), 503 );
+		}
+
+		$result = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( ! is_array( $result ) || empty( $result['success'] ) ) {
+			do_action( 'cadv_woo_functionalities_recaptcha_failed', $result, sanitize_key( $scope ) );
+
+			return new WP_Error( 'cadv_recaptcha_failed', __( 'La verificacion de seguridad no fue valida o vencio. Intentalo nuevamente.', 'cadv-woo-functionalities' ), 400 );
+		}
+
+		return true;
+	}
+
+	/**
 	 * Consume one attempt from the rate limit assigned to an IP and form.
 	 *
 	 * @param string $scope Form scope.
@@ -2617,17 +2803,7 @@ final class CADV_Woo_Functionalities {
 	 * @return true|WP_Error
 	 */
 	private function consume_public_rate_limit( $scope, $limit ) {
-		$remote_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-		$ip             = filter_var( $remote_address, FILTER_VALIDATE_IP ) ? $remote_address : 'unknown';
-
-		/**
-		 * Filter the client IP only when a trusted reverse proxy is configured.
-		 *
-		 * @param string $ip     Validated REMOTE_ADDR value.
-		 * @param string $scope  Public form scope.
-		 */
-		$ip = apply_filters( 'cadv_woo_functionalities_client_ip', $ip, $scope );
-		$ip = filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : 'unknown';
+		$ip = $this->get_public_client_ip( $scope );
 
 		$key     = 'cadv_wf_rate_' . md5( sanitize_key( $scope ) . '|' . hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) ) );
 		$attempt = (int) get_transient( $key );
@@ -2640,6 +2816,27 @@ final class CADV_Woo_Functionalities {
 		set_transient( $key, $attempt + 1, self::PUBLIC_RATE_LIMIT_WINDOW );
 
 		return true;
+	}
+
+	/**
+	 * Resolve a validated client IP for public-form security controls.
+	 *
+	 * @param string $scope Public form scope.
+	 * @return string
+	 */
+	private function get_public_client_ip( $scope ) {
+		$remote_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		$ip             = filter_var( $remote_address, FILTER_VALIDATE_IP ) ? $remote_address : 'unknown';
+
+		/**
+		 * Filter the client IP only when a trusted reverse proxy is configured.
+		 *
+		 * @param string $ip    Validated REMOTE_ADDR value.
+		 * @param string $scope Public form scope.
+		 */
+		$ip = apply_filters( 'cadv_woo_functionalities_client_ip', $ip, $scope );
+
+		return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : 'unknown';
 	}
 
 	/**
