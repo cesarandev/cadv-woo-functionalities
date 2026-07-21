@@ -24,6 +24,9 @@ final class CADV_Woo_Functionalities {
 	const CRM_LEAD_UPDATE_ACTION   = 'cesarandev_wf_update_crm_lead';
 	const DELETE_ACCOUNT_ACTION    = 'cesarandev_wf_request_account_deletion';
 	const DELETE_ACCOUNT_NONCE     = 'cesarandev_wf_request_account_deletion';
+	const PREVIEW_ACTION           = 'cadv_preview_technical_sheet';
+	const PREVIEW_NONCE_ACTION     = 'cadv_preview_technical_sheet';
+	const PDF_PREVIEW_STATS_META   = '_cesarandev_wf_pdf_preview_stats';
 	const ORDER_SOURCE             = 'cesarandev_technical_sheet_request';
 	const LEAD_POST_TYPE           = 'cesarandev_wf_lead';
 	const MARKETPLACE_TERM_COLOR_META = '_cadv_marketplace_color';
@@ -102,6 +105,8 @@ final class CADV_Woo_Functionalities {
 		add_action( 'admin_post_' . self::CRM_UPDATE_ACTION, array( $this, 'handle_crm_update' ) );
 		add_action( 'admin_post_' . self::CRM_LEAD_UPDATE_ACTION, array( $this, 'handle_crm_lead_update' ) );
 		add_action( 'admin_post_' . self::DELETE_ACCOUNT_ACTION, array( $this, 'handle_account_deletion_request' ) );
+		add_action( 'admin_post_' . self::PREVIEW_ACTION, array( $this, 'handle_technical_sheet_preview' ) );
+		add_action( 'admin_post_nopriv_' . self::PREVIEW_ACTION, array( $this, 'handle_technical_sheet_preview' ) );
 		add_shortcode( 'cadv_ficha_tecnica', array( $this, 'render_actions_shortcode' ) );
 		add_shortcode( 'cadv_registro_ica', array( $this, 'render_ica_shortcode' ) );
 		add_shortcode( 'cadv_categoria_producto', array( $this, 'render_product_category_shortcode' ) );
@@ -780,10 +785,11 @@ final class CADV_Woo_Functionalities {
 					<?php endforeach; ?>
 				</select>
 			</label>
-			<label><?php esc_html_e( 'Descarga', 'cadv-woo-functionalities' ); ?>
+			<label><?php esc_html_e( 'Estado de la ficha', 'cadv-woo-functionalities' ); ?>
 				<select name="download_status">
 					<option value=""><?php esc_html_e( 'Todas', 'cadv-woo-functionalities' ); ?></option>
 					<option value="downloaded" <?php selected( $filters['download_status'], 'downloaded' ); ?>><?php esc_html_e( 'Descargada', 'cadv-woo-functionalities' ); ?></option>
+					<option value="viewed" <?php selected( $filters['download_status'], 'viewed' ); ?>><?php esc_html_e( 'Vista sin descargar', 'cadv-woo-functionalities' ); ?></option>
 					<option value="not_downloaded" <?php selected( $filters['download_status'], 'not_downloaded' ); ?>><?php esc_html_e( 'No descargada', 'cadv-woo-functionalities' ); ?></option>
 				</select>
 			</label>
@@ -833,7 +839,7 @@ final class CADV_Woo_Functionalities {
 					<th><?php esc_html_e( 'Empresa / Cargo', 'cadv-woo-functionalities' ); ?></th>
 					<th><?php esc_html_e( 'Producto / Ficha', 'cadv-woo-functionalities' ); ?></th>
 					<th><?php esc_html_e( 'Pedido', 'cadv-woo-functionalities' ); ?></th>
-					<th><?php esc_html_e( 'Descarga', 'cadv-woo-functionalities' ); ?></th>
+					<th><?php esc_html_e( 'Actividad de la ficha', 'cadv-woo-functionalities' ); ?></th>
 					<th><?php esc_html_e( 'CRM', 'cadv-woo-functionalities' ); ?></th>
 					<?php if ( $show_actions ) : ?>
 						<th><?php esc_html_e( 'Acciones', 'cadv-woo-functionalities' ); ?></th>
@@ -868,9 +874,13 @@ final class CADV_Woo_Functionalities {
 							</td>
 							<td>
 								<span class="cesarandev-wf-badge"><?php echo esc_html( $row['status'] ); ?></span>
+								<br /><?php echo esc_html( sprintf( __( '%d vistas', 'cadv-woo-functionalities' ), (int) $row['preview_count'] ) ); ?>
+								<?php if ( $row['last_preview'] ) : ?>
+									<br /><span class="cesarandev-wf-muted"><?php echo esc_html( sprintf( __( 'Ultima vista: %s', 'cadv-woo-functionalities' ), $row['last_preview'] ) ); ?></span>
+								<?php endif; ?>
 								<br /><?php echo esc_html( sprintf( __( '%d descargas', 'cadv-woo-functionalities' ), (int) $row['download_count'] ) ); ?>
 								<?php if ( $row['last_download'] ) : ?>
-									<br /><span class="cesarandev-wf-muted"><?php echo esc_html( $row['last_download'] ); ?></span>
+									<br /><span class="cesarandev-wf-muted"><?php echo esc_html( sprintf( __( 'Ultima descarga: %s', 'cadv-woo-functionalities' ), $row['last_download'] ) ); ?></span>
 								<?php endif; ?>
 							</td>
 							<td>
@@ -937,6 +947,7 @@ final class CADV_Woo_Functionalities {
 					<th><?php esc_html_e( 'Contacto', 'cadv-woo-functionalities' ); ?></th>
 					<th><?php esc_html_e( 'Empresa / Cargo', 'cadv-woo-functionalities' ); ?></th>
 					<th><?php esc_html_e( 'Fichas solicitadas', 'cadv-woo-functionalities' ); ?></th>
+					<th><?php esc_html_e( 'Vistas PDF', 'cadv-woo-functionalities' ); ?></th>
 					<th><?php esc_html_e( 'Descargas', 'cadv-woo-functionalities' ); ?></th>
 					<th><?php esc_html_e( 'Ultima solicitud', 'cadv-woo-functionalities' ); ?></th>
 					<th><?php esc_html_e( 'Acciones', 'cadv-woo-functionalities' ); ?></th>
@@ -944,7 +955,7 @@ final class CADV_Woo_Functionalities {
 			</thead>
 			<tbody>
 				<?php if ( empty( $customers ) ) : ?>
-					<tr><td colspan="7"><?php esc_html_e( 'Aun no hay clientes registrados por fichas.', 'cadv-woo-functionalities' ); ?></td></tr>
+					<tr><td colspan="8"><?php esc_html_e( 'Aun no hay clientes registrados por fichas.', 'cadv-woo-functionalities' ); ?></td></tr>
 				<?php else : ?>
 					<?php foreach ( $customers as $customer ) : ?>
 						<tr>
@@ -952,6 +963,7 @@ final class CADV_Woo_Functionalities {
 							<td><?php echo esc_html( $customer['email'] ); ?><br /><span class="cesarandev-wf-muted"><?php echo esc_html( $customer['phone'] ); ?></span></td>
 							<td><?php echo esc_html( $customer['company'] ); ?><br /><span class="cesarandev-wf-muted"><?php echo esc_html( $customer['position'] ); ?></span></td>
 							<td><?php echo esc_html( $customer['requests'] ); ?></td>
+							<td><?php echo esc_html( $customer['previews'] ); ?></td>
 							<td><?php echo esc_html( $customer['downloads'] ); ?></td>
 							<td><?php echo esc_html( $customer['last_request'] ); ?></td>
 							<td>
@@ -990,6 +1002,7 @@ final class CADV_Woo_Functionalities {
 				<div class="cesarandev-wf-kpis">
 					<div class="cesarandev-wf-kpi"><strong><?php echo esc_html( $user->display_name ); ?></strong><span><?php echo esc_html( $user->user_email ); ?></span></div>
 					<div class="cesarandev-wf-kpi"><strong><?php echo esc_html( count( $rows ) ); ?></strong><span><?php esc_html_e( 'Registros de ficha', 'cadv-woo-functionalities' ); ?></span></div>
+					<div class="cesarandev-wf-kpi"><strong><?php echo esc_html( array_sum( wp_list_pluck( $rows, 'preview_count' ) ) ); ?></strong><span><?php esc_html_e( 'Vistas de PDF', 'cadv-woo-functionalities' ); ?></span></div>
 					<div class="cesarandev-wf-kpi"><strong><?php echo esc_html( array_sum( wp_list_pluck( $rows, 'download_count' ) ) ); ?></strong><span><?php esc_html_e( 'Descargas totales', 'cadv-woo-functionalities' ); ?></span></div>
 				</div>
 			<?php endif; ?>
@@ -1839,6 +1852,7 @@ final class CADV_Woo_Functionalities {
 			<?php if ( ! empty( $downloads ) ) : ?>
 				<div class="cesarandev-wf-my-account__downloads">
 					<?php foreach ( $downloads as $download ) : ?>
+						<?php $preview_url = $this->get_customer_download_preview_url( $download ); ?>
 						<article class="cesarandev-wf-my-account__download">
 							<div>
 								<strong><?php echo esc_html( isset( $download['product_name'] ) ? $download['product_name'] : __( 'Ficha tecnica', 'cadv-woo-functionalities' ) ); ?></strong>
@@ -1846,9 +1860,14 @@ final class CADV_Woo_Functionalities {
 									<span><?php echo esc_html( $download['download_name'] ); ?></span>
 								<?php endif; ?>
 							</div>
-							<?php if ( ! empty( $download['download_url'] ) ) : ?>
-								<a class="cesarandev-wf-my-account__download-button" href="<?php echo esc_url( $download['download_url'] ); ?>"><?php esc_html_e( 'Descargar', 'cadv-woo-functionalities' ); ?></a>
-							<?php endif; ?>
+							<div class="cesarandev-wf-my-account__download-actions">
+								<?php if ( $preview_url ) : ?>
+									<a class="cesarandev-wf-my-account__preview-button" href="<?php echo esc_url( $preview_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Vista previa', 'cadv-woo-functionalities' ); ?></a>
+								<?php endif; ?>
+								<?php if ( ! empty( $download['download_url'] ) ) : ?>
+									<a class="cesarandev-wf-my-account__download-button" href="<?php echo esc_url( $download['download_url'] ); ?>"><?php esc_html_e( 'Descargar', 'cadv-woo-functionalities' ); ?></a>
+								<?php endif; ?>
+							</div>
 						</article>
 					<?php endforeach; ?>
 				</div>
@@ -1897,6 +1916,224 @@ final class CADV_Woo_Functionalities {
 	 */
 	private function get_customer_account_downloads( $user_id ) {
 		return function_exists( 'wc_get_customer_available_downloads' ) ? (array) wc_get_customer_available_downloads( $user_id ) : array();
+	}
+
+	/**
+	 * Build a signed URL for an inline PDF preview.
+	 *
+	 * @param array $download Customer download data.
+	 * @return string
+	 */
+	private function get_customer_download_preview_url( array $download ) {
+		if ( ! $this->resolve_customer_download_pdf_path( $download ) ) {
+			return '';
+		}
+
+		$download_id = isset( $download['download_id'] ) ? sanitize_text_field( (string) $download['download_id'] ) : '';
+		$order_id    = isset( $download['order_id'] ) ? absint( $download['order_id'] ) : 0;
+		$product_id  = isset( $download['product_id'] ) ? absint( $download['product_id'] ) : 0;
+
+		if ( '' === $download_id || ! $order_id || ! $product_id ) {
+			return '';
+		}
+
+		$url = add_query_arg(
+			array(
+				'action'      => self::PREVIEW_ACTION,
+				'download_id' => $download_id,
+				'order_id'    => $order_id,
+				'product_id'  => $product_id,
+			),
+			admin_url( 'admin-post.php' )
+		);
+
+		return add_query_arg( '_wpnonce', wp_create_nonce( $this->get_preview_nonce_action( $download_id, $order_id, $product_id ) ), $url );
+	}
+
+	/**
+	 * Serve a permitted PDF inline without exposing its storage URL.
+	 */
+	public function handle_technical_sheet_preview() {
+		if ( ! is_user_logged_in() ) {
+			wp_safe_redirect( $this->get_my_account_url() );
+			exit;
+		}
+
+		$download_id = isset( $_GET['download_id'] ) && is_string( $_GET['download_id'] ) ? sanitize_text_field( wp_unslash( $_GET['download_id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified below with a resource-specific nonce.
+		$order_id    = isset( $_GET['order_id'] ) && is_string( $_GET['order_id'] ) ? absint( wp_unslash( $_GET['order_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified below with a resource-specific nonce.
+		$product_id  = isset( $_GET['product_id'] ) && is_string( $_GET['product_id'] ) ? absint( wp_unslash( $_GET['product_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified below with a resource-specific nonce.
+		$nonce       = isset( $_GET['_wpnonce'] ) && is_string( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This is the nonce being verified.
+
+		if ( '' === $download_id || ! $order_id || ! $product_id || ! wp_verify_nonce( $nonce, $this->get_preview_nonce_action( $download_id, $order_id, $product_id ) ) ) {
+			$this->stop_technical_sheet_preview( __( 'El enlace de vista previa no es valido o ya vencio.', 'cadv-woo-functionalities' ), 403 );
+		}
+
+		$matched_download = array();
+
+		foreach ( $this->get_customer_account_downloads( get_current_user_id() ) as $download ) {
+			if (
+				isset( $download['download_id'], $download['order_id'], $download['product_id'] ) &&
+				hash_equals( $download_id, (string) $download['download_id'] ) &&
+				$order_id === absint( $download['order_id'] ) &&
+				$product_id === absint( $download['product_id'] )
+			) {
+				$matched_download = $download;
+				break;
+			}
+		}
+
+		if ( empty( $matched_download ) ) {
+			$this->stop_technical_sheet_preview( __( 'No tienes permiso para visualizar esta ficha tecnica.', 'cadv-woo-functionalities' ), 403 );
+		}
+
+		$file_path = $this->resolve_customer_download_pdf_path( $matched_download );
+
+		if ( ! $file_path ) {
+			$this->stop_technical_sheet_preview( __( 'La vista previa solo esta disponible para archivos PDF locales y validos.', 'cadv-woo-functionalities' ), 404 );
+		}
+
+		$this->track_technical_sheet_preview( $matched_download );
+
+		$filename = sanitize_file_name( wp_basename( $file_path ) );
+		$filename = $filename ? $filename : 'ficha-tecnica.pdf';
+		$filesize = filesize( $file_path );
+
+		while ( ob_get_level() ) {
+			ob_end_clean();
+		}
+
+		nocache_headers();
+		header( 'Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0', true );
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Disposition: inline; filename="' . $filename . '"; filename*=UTF-8\'\'' . rawurlencode( $filename ) );
+		header( 'X-Content-Type-Options: nosniff' );
+		header( 'X-Frame-Options: SAMEORIGIN' );
+		header( "Content-Security-Policy: frame-ancestors 'self'" );
+		header( 'Referrer-Policy: no-referrer' );
+		header( 'X-Robots-Tag: noindex, nofollow, noarchive', true );
+
+		if ( false !== $filesize ) {
+			header( 'Content-Length: ' . (string) $filesize );
+		}
+
+		readfile( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streaming an already-authorized local PDF response.
+		exit;
+	}
+
+	/**
+	 * Record a protected PDF view on its technical-sheet order.
+	 *
+	 * @param array $download Matched customer download data.
+	 */
+	private function track_technical_sheet_preview( array $download ) {
+		$order_id    = isset( $download['order_id'] ) ? absint( $download['order_id'] ) : 0;
+		$download_id = isset( $download['download_id'] ) ? (string) $download['download_id'] : '';
+		$order       = $order_id ? wc_get_order( $order_id ) : false;
+
+		if (
+			! $order instanceof WC_Order ||
+			'technical_sheet' !== $order->get_meta( '_cesarandev_wf_request_type' ) ||
+			$order->get_customer_id() !== get_current_user_id() ||
+			'' === $download_id
+		) {
+			return;
+		}
+
+		$all_stats = (array) $order->get_meta( self::PDF_PREVIEW_STATS_META, true );
+		$stats_key = md5( $download_id );
+		$stats     = isset( $all_stats[ $stats_key ] ) && is_array( $all_stats[ $stats_key ] ) ? $all_stats[ $stats_key ] : array();
+		$now       = current_time( 'timestamp' );
+		$count     = isset( $stats['count'] ) ? absint( $stats['count'] ) + 1 : 1;
+
+		$all_stats[ $stats_key ] = array(
+			'download_id'     => $download_id,
+			'count'           => $count,
+			'first_viewed_at' => ! empty( $stats['first_viewed_at'] ) ? absint( $stats['first_viewed_at'] ) : $now,
+			'last_viewed_at'  => $now,
+		);
+
+		$order->update_meta_data( self::PDF_PREVIEW_STATS_META, $all_stats );
+		$order->save_meta_data();
+
+		/**
+		 * Fires after a customer opens a protected technical-sheet preview.
+		 *
+		 * @param int    $order_id    Order ID.
+		 * @param int    $user_id     Customer ID.
+		 * @param int    $product_id  Product ID.
+		 * @param string $download_id Download ID.
+		 * @param int    $count       Accumulated preview count.
+		 */
+		do_action( 'cadv_woo_functionalities_pdf_previewed', $order_id, get_current_user_id(), absint( $download['product_id'] ), $download_id, $count );
+	}
+
+	/**
+	 * Resolve and validate the local PDF file behind a customer download.
+	 *
+	 * @param array $download Customer download data.
+	 * @return string
+	 */
+	private function resolve_customer_download_pdf_path( array $download ) {
+		if ( empty( $download['file']['file'] ) || ! class_exists( 'WC_Download_Handler' ) ) {
+			return '';
+		}
+
+		$source = (string) $download['file']['file'];
+
+		if ( 'pdf' !== strtolower( pathinfo( preg_replace( '/[?#].*$/', '', $source ), PATHINFO_EXTENSION ) ) ) {
+			return '';
+		}
+
+		$parsed = WC_Download_Handler::parse_file_path( $source );
+
+		if ( ! empty( $parsed['remote_file'] ) || empty( $parsed['file_path'] ) ) {
+			return '';
+		}
+
+		$file_path = realpath( $parsed['file_path'] );
+
+		if ( false === $file_path || ! is_file( $file_path ) || ! is_readable( $file_path ) ) {
+			return '';
+		}
+
+		$handle    = fopen( $file_path, 'rb' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Reading a local WooCommerce download signature.
+		$signature = $handle ? fread( $handle, 1024 ) : false; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Reading a local WooCommerce download signature.
+
+		if ( $handle ) {
+			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing the local signature handle.
+		}
+
+		return is_string( $signature ) && false !== strpos( $signature, '%PDF-' ) ? $file_path : '';
+	}
+
+	/**
+	 * Build the resource-specific preview nonce action.
+	 *
+	 * @param string $download_id Download identifier.
+	 * @param int    $order_id    Order identifier.
+	 * @param int    $product_id  Product identifier.
+	 * @return string
+	 */
+	private function get_preview_nonce_action( $download_id, $order_id, $product_id ) {
+		return self::PREVIEW_NONCE_ACTION . '|' . $download_id . '|' . absint( $order_id ) . '|' . absint( $product_id );
+	}
+
+	/**
+	 * Stop a protected preview request with a safe error page.
+	 *
+	 * @param string $message Error message.
+	 * @param int    $status  HTTP status.
+	 */
+	private function stop_technical_sheet_preview( $message, $status ) {
+		nocache_headers();
+		wp_die(
+			esc_html( $message ),
+			esc_html__( 'Vista previa no disponible', 'cadv-woo-functionalities' ),
+			array(
+				'response'  => absint( $status ),
+				'back_link' => true,
+			)
+		);
 	}
 
 	/**
@@ -3051,7 +3288,7 @@ final class CADV_Woo_Functionalities {
 			wp_send_json_success(
 				array(
 					'message'      => __( 'Esta ficha tecnica ya esta disponible para este correo en tu zona de cliente.', 'cadv-woo-functionalities' ),
-					'downloadsUrl' => wc_get_account_endpoint_url( 'downloads' ),
+					'downloadsUrl' => $this->get_my_account_module_url( 'descargas' ),
 					'existing'     => true,
 				)
 			);
@@ -3070,7 +3307,7 @@ final class CADV_Woo_Functionalities {
 		wp_send_json_success(
 			array(
 				'message'      => __( 'Tu solicitud fue registrada. Ya puedes acceder a la ficha tecnica desde tu zona de cliente.', 'cadv-woo-functionalities' ),
-				'downloadsUrl' => wc_get_account_endpoint_url( 'downloads' ),
+				'downloadsUrl' => $this->get_my_account_module_url( 'descargas' ),
 			)
 		);
 	}
@@ -3612,7 +3849,7 @@ final class CADV_Woo_Functionalities {
 			__( "Hola %1\$s,\n\nTu ficha tecnica de %2\$s ya esta disponible en tu zona de cliente.\n\nPuedes descargarla aqui: %3\$s", 'cadv-woo-functionalities' ),
 			$user->display_name,
 			$product->get_name(),
-			wc_get_account_endpoint_url( 'downloads' )
+			$this->get_my_account_module_url( 'descargas' )
 		);
 
 		wp_mail( $user->user_email, $subject, $message );
@@ -3722,7 +3959,10 @@ final class CADV_Woo_Functionalities {
 				'Tipo CTA',
 				'Fuente',
 				'Pedido',
-				'Estado de descarga',
+				'Estado de la ficha',
+				'Total de vistas PDF',
+				'Primera vista PDF',
+				'Ultima vista PDF',
 				'Total de descargas',
 				'Primera descarga',
 				'Ultima descarga',
@@ -3754,6 +3994,9 @@ final class CADV_Woo_Functionalities {
 					'',
 					$row['order_id'],
 					$row['status'],
+					$row['preview_count'],
+					$row['first_preview'],
+					$row['last_preview'],
 					$row['download_count'],
 					$row['first_download'],
 					$row['last_download'],
@@ -3784,6 +4027,9 @@ final class CADV_Woo_Functionalities {
 					$lead['crop_type'],
 					$lead['cta_types_label'],
 					$lead['source_url'],
+					'',
+					'',
+					'',
 					'',
 					'',
 					'',
@@ -3925,6 +4171,9 @@ final class CADV_Woo_Functionalities {
 						'download_id'    => '',
 						'download_name'  => '',
 						'status'         => __( 'Solicitada', 'cadv-woo-functionalities' ),
+						'preview_count'  => 0,
+						'first_preview'  => '',
+						'last_preview'   => '',
 						'download_count' => 0,
 						'first_download' => '',
 						'last_download'  => '',
@@ -3934,7 +4183,18 @@ final class CADV_Woo_Functionalities {
 			}
 
 			foreach ( $downloads as $download_id => $download ) {
-				$stats  = $this->get_download_permission_stats( $order->get_id(), $customer_id, $product->get_id(), $download_id );
+				$stats         = $this->get_download_permission_stats( $order->get_id(), $customer_id, $product->get_id(), $download_id );
+				$preview_stats = $this->get_pdf_preview_stats( $order, $download_id );
+				$status        = __( 'Solicitada', 'cadv-woo-functionalities' );
+
+				if ( $preview_stats['preview_count'] > 0 ) {
+					$status = __( 'Vista', 'cadv-woo-functionalities' );
+				}
+
+				if ( $stats['download_count'] > 0 ) {
+					$status = __( 'Descargada', 'cadv-woo-functionalities' );
+				}
+
 				$rows[] = array_merge(
 					$base,
 					array(
@@ -3942,7 +4202,10 @@ final class CADV_Woo_Functionalities {
 						'product_id'     => $product->get_id(),
 						'download_id'    => $download_id,
 						'download_name'  => $this->get_download_display_name( $download ),
-						'status'         => $stats['download_count'] > 0 ? __( 'Descargada', 'cadv-woo-functionalities' ) : __( 'Solicitada', 'cadv-woo-functionalities' ),
+						'status'         => $status,
+						'preview_count'  => $preview_stats['preview_count'],
+						'first_preview'  => $preview_stats['first_preview'],
+						'last_preview'   => $preview_stats['last_preview'],
 						'download_count' => $stats['download_count'],
 						'first_download' => $stats['first_download'],
 						'last_download'  => $stats['last_download'],
@@ -3952,6 +4215,27 @@ final class CADV_Woo_Functionalities {
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * Get protected PDF preview statistics stored on an order.
+	 *
+	 * @param WC_Order $order       Technical-sheet order.
+	 * @param string   $download_id Download identifier.
+	 * @return array
+	 */
+	private function get_pdf_preview_stats( WC_Order $order, $download_id ) {
+		$all_stats = (array) $order->get_meta( self::PDF_PREVIEW_STATS_META, true );
+		$stats_key = md5( (string) $download_id );
+		$stats     = isset( $all_stats[ $stats_key ] ) && is_array( $all_stats[ $stats_key ] ) ? $all_stats[ $stats_key ] : array();
+		$first     = ! empty( $stats['first_viewed_at'] ) ? absint( $stats['first_viewed_at'] ) : 0;
+		$last      = ! empty( $stats['last_viewed_at'] ) ? absint( $stats['last_viewed_at'] ) : 0;
+
+		return array(
+			'preview_count' => isset( $stats['count'] ) ? absint( $stats['count'] ) : 0,
+			'first_preview' => $first ? $this->format_report_timestamp( $first ) : '',
+			'last_preview'  => $last ? $this->format_report_timestamp( $last ) : '',
+		);
 	}
 
 	/**
@@ -4139,7 +4423,7 @@ final class CADV_Woo_Functionalities {
 			$filters['crm_status'] = '';
 		}
 
-		if ( ! in_array( $filters['download_status'], array( '', 'downloaded', 'not_downloaded' ), true ) ) {
+		if ( ! in_array( $filters['download_status'], array( '', 'downloaded', 'viewed', 'not_downloaded' ), true ) ) {
 			$filters['download_status'] = '';
 		}
 
@@ -4232,6 +4516,10 @@ final class CADV_Woo_Functionalities {
 					}
 
 					if ( 'downloaded' === $filters['download_status'] && 0 >= (int) $row['download_count'] ) {
+						return false;
+					}
+
+					if ( 'viewed' === $filters['download_status'] && ( 0 >= (int) $row['preview_count'] || 0 < (int) $row['download_count'] ) ) {
 						return false;
 					}
 
@@ -4427,6 +4715,7 @@ final class CADV_Woo_Functionalities {
 	private function get_crm_stats( array $rows, array $leads = array() ) {
 		$customers = array();
 		$products  = array();
+		$previews  = 0;
 		$downloads = 0;
 		$pending   = 0;
 		$deletions = 0;
@@ -4440,6 +4729,7 @@ final class CADV_Woo_Functionalities {
 			}
 
 			$products[ $row['product_name'] ] = true;
+			$previews += (int) $row['preview_count'];
 			$downloads += (int) $row['download_count'];
 
 			if ( 0 >= (int) $row['download_count'] ) {
@@ -4462,6 +4752,7 @@ final class CADV_Woo_Functionalities {
 			__( 'Leads CTA', 'cadv-woo-functionalities' )               => count( $leads ),
 			__( 'Clientes', 'cadv-woo-functionalities' )                => count( $customers ),
 			__( 'Fichas diferentes', 'cadv-woo-functionalities' )       => count( $products ),
+			__( 'Vistas de PDF', 'cadv-woo-functionalities' )           => $previews,
 			__( 'Descargas totales', 'cadv-woo-functionalities' )       => $downloads,
 			__( 'Sin descargar', 'cadv-woo-functionalities' )           => $pending,
 			__( 'Leads convertidos', 'cadv-woo-functionalities' )       => $converted,
@@ -4490,6 +4781,7 @@ final class CADV_Woo_Functionalities {
 					'company'      => $row['company'],
 					'position'     => $row['position'],
 					'requests'     => 0,
+					'previews'     => 0,
 					'downloads'    => 0,
 					'last_request' => $row['request_date'],
 					'last_ts'      => (int) $row['request_timestamp'],
@@ -4497,6 +4789,7 @@ final class CADV_Woo_Functionalities {
 			}
 
 			$customers[ $key ]['requests']++;
+			$customers[ $key ]['previews'] += (int) $row['preview_count'];
 			$customers[ $key ]['downloads'] += (int) $row['download_count'];
 
 			if ( (int) $row['request_timestamp'] > $customers[ $key ]['last_ts'] ) {
@@ -4689,8 +4982,18 @@ final class CADV_Woo_Functionalities {
 			$current = 'dashboard';
 		}
 
+		if ( 'downloads' === $current ) {
+			wp_safe_redirect( $this->get_my_account_module_url( 'descargas' ) );
+			exit;
+		}
+
+		if ( 'edit-account' === $current ) {
+			wp_safe_redirect( $this->get_my_account_module_url( 'mis-datos' ) );
+			exit;
+		}
+
 		if ( in_array( $current, array( 'dashboard', 'orders', 'view-order', 'edit-address', 'payment-methods', 'add-payment-method' ), true ) ) {
-			wp_safe_redirect( wc_get_account_endpoint_url( 'downloads' ) );
+			wp_safe_redirect( $this->get_my_account_module_url( 'descargas' ) );
 			exit;
 		}
 	}

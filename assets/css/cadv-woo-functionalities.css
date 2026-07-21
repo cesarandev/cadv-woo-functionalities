@@ -309,7 +309,8 @@
 }
 
 .cesarandev-wf-my-account__logout,
-.cesarandev-wf-my-account__download-button {
+.cesarandev-wf-my-account__download-button,
+.cesarandev-wf-my-account__preview-button {
 	border: 1px solid currentColor;
 	border-radius: 5px;
 	font-size: 13px;
@@ -530,6 +531,27 @@
 	background: var(--cadv-green, #203212);
 	color: #ffffff;
 	flex: 0 0 auto;
+}
+
+.cesarandev-wf-my-account__download-actions {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 8px;
+}
+
+.cesarandev-wf-my-account__download-actions a {
+	align-items: center;
+	display: inline-flex;
+	justify-content: center;
+}
+
+.cesarandev-wf-my-account__preview-button,
+.cesarandev-wf-my-account__preview-button:hover,
+.cesarandev-wf-my-account__preview-button:focus {
+	background: #ffffff;
+	border-color: var(--cadv-green, #203212);
+	color: var(--cadv-green, #203212);
+	text-decoration: none;
 }
 
 .cesarandev-wf-my-account__empty {
@@ -1497,7 +1519,12 @@ body.cesarandev-wf-modal-open {
 		flex-direction: column;
 	}
 
-	.cesarandev-wf-my-account__download-button {
+	.cesarandev-wf-my-account__download-actions {
+		flex-direction: column;
+	}
+
+	.cesarandev-wf-my-account__download-button,
+	.cesarandev-wf-my-account__preview-button {
 		text-align: center;
 	}
 
