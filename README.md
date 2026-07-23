@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.51" src="https://img.shields.io/badge/versión-1.1.51-315c27?style=flat-square">
+  <img alt="Versión 1.1.52" src="https://img.shields.io/badge/versión-1.1.52-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -489,7 +489,7 @@ Si no existe un número global configurado, el shortcode no imprime contenido.
 
 Los shortcodes de producto aceptan `product_id="123"`. Si el atributo se omite, resuelven primero el objeto global de WooCommerce, la página de producto y la entrada actual.
 
-`[cadv_mi_espacio]` admite `label="Mi espacio"`, `login_label="Iniciar sesión"` y `url="/micuenta/"`. Con la sesión iniciada, el texto se presenta como popover al pasar el cursor o enfocar el icono; sin sesión, se muestra un botón de acceso. Para crear el área del cliente, publica una página con slug `micuenta` e inserta `[cadv_mi_cuenta]`; los visitantes verán el formulario de acceso de WooCommerce y los usuarios autenticados verán un menú modular con la información capturada por el plugin.
+`[cadv_mi_espacio]` admite `label="Mi espacio"`, `login_label="Iniciar sesión"` y `url="/micuenta/"`. Con la sesión iniciada, el texto se presenta como popover al pasar el cursor o enfocar el icono; sin sesión, se muestra un botón de acceso. Para mostrar siempre un botón, incluso con la sesión iniciada, usa `variant="button"`. Los atributos `color`, `background_color` y `hover_color` controlan respectivamente el color de la letra, el fondo inicial y el fondo al pasar el cursor. Funcionan tanto con la variante como con el botón automático de los visitantes: `[cadv_mi_espacio color="#FFFFFF" background_color="#203212" hover_color="#D97706"]`. Para forzar el botón en ambos estados: `[cadv_mi_espacio variant="button" color="#FFFFFF" background_color="#203212" hover_color="#D97706"]`. Para crear el área del cliente, publica una página con slug `micuenta` e inserta `[cadv_mi_cuenta]`; los visitantes verán el formulario de acceso de WooCommerce y los usuarios autenticados verán un menú modular con la información capturada por el plugin.
 
 El acceso de `[cadv_mi_cuenta]` ocupa el ancho completo y mantiene dentro de `/micuenta/` el inicio de sesión, la solicitud de recuperación y el formulario para definir la nueva contraseña. La columna visual derecha usa una composición agrícola incluida por defecto y puede personalizarse con estos atributos:
 

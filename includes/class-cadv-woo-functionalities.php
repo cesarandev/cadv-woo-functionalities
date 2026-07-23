@@ -1248,7 +1248,7 @@ final class CADV_Woo_Functionalities {
 	 * Render the session-aware customer shortcut.
 	 *
 	 * Usage: [cadv_mi_espacio]
-	 * Optional: [cadv_mi_espacio label="Mi espacio" login_label="Iniciar sesión" url="/micuenta/"]
+	 * Optional: [cadv_mi_espacio label="Mi espacio" login_label="Iniciar sesión" url="/micuenta/" variant="button" color="#ffffff" background_color="#203212" hover_color="#17220f"]
 	 *
 	 * @param array $atts Shortcode attributes.
 	 * @return string
@@ -1256,9 +1256,13 @@ final class CADV_Woo_Functionalities {
 	public function render_my_space_shortcode( $atts = array() ) {
 		$atts = shortcode_atts(
 			array(
-				'label'       => __( 'Mi espacio', 'cadv-woo-functionalities' ),
-				'login_label' => __( 'Iniciar sesión', 'cadv-woo-functionalities' ),
-				'url'         => '',
+				'label'            => __( 'Mi espacio', 'cadv-woo-functionalities' ),
+				'login_label'      => __( 'Iniciar sesión', 'cadv-woo-functionalities' ),
+				'url'              => '',
+				'variant'          => '',
+				'color'            => '',
+				'background_color' => '',
+				'hover_color'      => '',
 			),
 			$atts,
 			'cadv_mi_espacio'
@@ -1266,6 +1270,25 @@ final class CADV_Woo_Functionalities {
 		$label       = sanitize_text_field( $atts['label'] );
 		$login_label = sanitize_text_field( $atts['login_label'] );
 		$url         = $this->get_my_account_url( $atts['url'] );
+		$is_button   = 'button' === sanitize_key( $atts['variant'] );
+		$color       = sanitize_hex_color( $atts['color'] );
+		$background  = sanitize_hex_color( $atts['background_color'] );
+		$hover       = sanitize_hex_color( $atts['hover_color'] );
+		$styles      = array();
+
+		if ( $color ) {
+			$styles[] = '--cadv-my-space-color: ' . $color;
+		}
+
+		if ( $background ) {
+			$styles[] = '--cadv-my-space-background: ' . $background;
+		}
+
+		if ( $hover ) {
+			$styles[] = '--cadv-my-space-hover: ' . $hover;
+		}
+
+		$style = $styles ? sprintf( ' style="%s;"', esc_attr( implode( '; ', $styles ) ) ) : '';
 
 		if ( '' === $label ) {
 			$label = __( 'Mi espacio', 'cadv-woo-functionalities' );
@@ -1279,17 +1302,28 @@ final class CADV_Woo_Functionalities {
 
 		if ( ! is_user_logged_in() ) {
 			return sprintf(
-				'<a class="cesarandev-wf-my-space-login" href="%1$s"><svg class="cesarandev-wf-my-space-login__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm5.59 4.59L17 6.17 22.83 12 17 17.83l-1.41-1.42L19 13H9v-2h10l-3.41-3.41Z"/></svg><span>%2$s</span></a>',
+				'<a class="cesarandev-wf-my-space-login cesarandev-wf-my-space-button" href="%1$s"%3$s><svg class="cesarandev-wf-my-space-login__icon cesarandev-wf-my-space-button__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm5.59 4.59L17 6.17 22.83 12 17 17.83l-1.41-1.42L19 13H9v-2h10l-3.41-3.41Z"/></svg><span>%2$s</span></a>',
 				esc_url( $url ),
-				esc_html( $login_label )
+				esc_html( $login_label ),
+				$style
+			);
+		}
+
+		if ( $is_button ) {
+			return sprintf(
+				'<a class="cesarandev-wf-my-space-button" href="%1$s"%3$s><svg class="cesarandev-wf-my-space-button__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5.33 0-8 2.67-8 5.25C4 20.77 5.23 22 6.75 22h10.5A2.75 2.75 0 0 0 20 19.25C20 16.67 17.33 14 12 14Z"/></svg><span>%2$s</span></a>',
+				esc_url( $url ),
+				esc_html( $label ),
+				$style
 			);
 		}
 
 		return sprintf(
-			'<span class="cesarandev-wf-my-space"><a class="cesarandev-wf-my-space__link" href="%1$s" aria-label="%2$s"><svg class="cesarandev-wf-my-space__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5.33 0-8 2.67-8 5.25C4 20.77 5.23 22 6.75 22h10.5A2.75 2.75 0 0 0 20 19.25C20 16.67 17.33 14 12 14Z"/></svg><span class="cesarandev-wf-my-space__popover" role="tooltip">%3$s</span></a></span>',
+			'<span class="cesarandev-wf-my-space"%4$s><a class="cesarandev-wf-my-space__link" href="%1$s" aria-label="%2$s"><svg class="cesarandev-wf-my-space__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5.33 0-8 2.67-8 5.25C4 20.77 5.23 22 6.75 22h10.5A2.75 2.75 0 0 0 20 19.25C20 16.67 17.33 14 12 14Z"/></svg><span class="cesarandev-wf-my-space__popover" role="tooltip">%3$s</span></a></span>',
 			esc_url( $url ),
 			esc_attr( $label ),
-			esc_html( $label )
+			esc_html( $label ),
+			$style
 		);
 	}
 

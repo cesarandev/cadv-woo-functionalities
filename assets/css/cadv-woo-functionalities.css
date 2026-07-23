@@ -140,19 +140,21 @@
 
 .cesarandev-wf-my-space,
 .cesarandev-wf-my-space-login,
+.cesarandev-wf-my-space-button,
 .cesarandev-wf-my-account {
 	--cadv-green: #203212;
 	--cadv-green-soft: #e5f4e7;
 	font-family: "Poppins", Arial, sans-serif;
 }
 
-.cesarandev-wf-my-space-login {
+.cesarandev-wf-my-space-login,
+.cesarandev-wf-my-space-button {
 	align-items: center;
-	background: var(--cadv-green, #203212);
-	border: 1px solid var(--cadv-green, #203212);
+	background: var(--cadv-my-space-background, var(--cadv-green, #203212));
+	border: 1px solid var(--cadv-my-space-background, var(--cadv-green, #203212));
 	border-radius: 6px;
 	box-shadow: none;
-	color: #ffffff;
+	color: var(--cadv-my-space-color, #ffffff);
 	display: inline-flex;
 	font-size: 13px;
 	font-weight: 700;
@@ -166,19 +168,23 @@
 }
 
 .cesarandev-wf-my-space-login:hover,
-.cesarandev-wf-my-space-login:focus {
-	background: #17220f;
-	color: #ffffff;
+.cesarandev-wf-my-space-login:focus,
+.cesarandev-wf-my-space-button:hover,
+.cesarandev-wf-my-space-button:focus {
+	background: var(--cadv-my-space-hover, #17220f);
+	color: var(--cadv-my-space-color, #ffffff);
 	text-decoration: none;
 	transform: translateY(-1px);
 }
 
-.cesarandev-wf-my-space-login:focus-visible {
-	outline: 2px solid var(--cadv-green, #203212);
+.cesarandev-wf-my-space-login:focus-visible,
+.cesarandev-wf-my-space-button:focus-visible {
+	outline: 2px solid var(--cadv-my-space-background, var(--cadv-green, #203212));
 	outline-offset: 2px;
 }
 
-.cesarandev-wf-my-space-login__icon {
+.cesarandev-wf-my-space-login__icon,
+.cesarandev-wf-my-space-button__icon {
 	fill: currentColor;
 	height: 19px;
 	width: 19px;
@@ -191,7 +197,7 @@
 
 .cesarandev-wf-my-space__link {
 	align-items: center;
-	color: var(--cadv-green, #203212);
+	color: var(--cadv-my-space-color, var(--cadv-green, #203212));
 	display: inline-flex;
 	justify-content: center;
 	min-height: 42px;
@@ -202,12 +208,12 @@
 
 .cesarandev-wf-my-space__link:hover,
 .cesarandev-wf-my-space__link:focus {
-	color: var(--cadv-green, #203212);
+	color: var(--cadv-my-space-color, var(--cadv-green, #203212));
 }
 
 .cesarandev-wf-my-space__link:focus-visible {
 	border-radius: 999px;
-	outline: 2px solid var(--cadv-green, #203212);
+	outline: 2px solid var(--cadv-my-space-color, var(--cadv-green, #203212));
 	outline-offset: 2px;
 }
 
