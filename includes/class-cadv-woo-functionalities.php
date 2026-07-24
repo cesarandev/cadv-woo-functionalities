@@ -105,6 +105,7 @@ final class CADV_Woo_Functionalities {
 		add_action( 'admin_post_' . self::EXPORT_ACTION, array( $this, 'export_requests_csv' ) );
 		add_action( 'admin_post_' . self::CRM_UPDATE_ACTION, array( $this, 'handle_crm_update' ) );
 		add_action( 'admin_post_' . self::CRM_LEAD_UPDATE_ACTION, array( $this, 'handle_crm_lead_update' ) );
+		add_filter( 'cadv_woo_functionalities_ingest_lead', array( $this, 'ingest_external_lead' ), 10, 2 );
 		add_action( 'admin_post_' . self::DELETE_ACCOUNT_ACTION, array( $this, 'handle_account_deletion_request' ) );
 		add_action( 'admin_post_' . self::PREVIEW_ACTION, array( $this, 'handle_technical_sheet_preview' ) );
 		add_action( 'admin_post_nopriv_' . self::PREVIEW_ACTION, array( $this, 'handle_technical_sheet_preview' ) );
@@ -646,6 +647,7 @@ final class CADV_Woo_Functionalities {
 					<option value="quote" <?php selected( $filters['cta_type'], 'quote' ); ?>><?php esc_html_e( 'Cotizacion', 'cadv-woo-functionalities' ); ?></option>
 					<option value="services" <?php selected( $filters['cta_type'], 'services' ); ?>><?php esc_html_e( 'Servicios', 'cadv-woo-functionalities' ); ?></option>
 					<option value="newsletter" <?php selected( $filters['cta_type'], 'newsletter' ); ?>><?php esc_html_e( 'Newsletter', 'cadv-woo-functionalities' ); ?></option>
+					<option value="tailored_to" <?php selected( $filters['cta_type'], 'tailored_to' ); ?>><?php esc_html_e( 'Tailored To', 'cadv-woo-functionalities' ); ?></option>
 				</select>
 			</label>
 			<label><?php esc_html_e( 'Estado CRM', 'cadv-woo-functionalities' ); ?>
@@ -718,11 +720,18 @@ final class CADV_Woo_Functionalities {
 									<br /><strong><?php echo esc_html( sprintf( __( 'Demostracion: %s', 'cadv-woo-functionalities' ), $lead['demo_date_formatted'] ) ); ?></strong>
 								<?php endif; ?>
 								<br /><span class="cesarandev-wf-muted"><?php echo esc_html( $lead['crop_type'] ); ?></span>
+								<?php if ( $lead['last_formula_summary'] ) : ?>
+									<br /><strong><?php echo esc_html( $lead['last_technical_status_label'] ); ?></strong>
+									<br /><span class="cesarandev-wf-muted"><?php echo esc_html( $lead['last_formula_summary'] ); ?></span>
+								<?php endif; ?>
 							</td>
 							<td>
 								<?php echo esc_html( $lead['cta_types_label'] ); ?>
 								<?php if ( $lead['source_url'] ) : ?>
 									<br /><a href="<?php echo esc_url( $lead['source_url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Ver fuente', 'cadv-woo-functionalities' ); ?></a>
+								<?php endif; ?>
+								<?php if ( $lead['last_request_admin_url'] ) : ?>
+									<br /><a href="<?php echo esc_url( $lead['last_request_admin_url'] ); ?>"><?php esc_html_e( 'Abrir expediente Tailored To', 'cadv-woo-functionalities' ); ?></a>
 								<?php endif; ?>
 								<br /><span class="cesarandev-wf-muted"><?php echo esc_html( sprintf( __( '%d interacciones', 'cadv-woo-functionalities' ), (int) $lead['interaction_count'] ) ); ?></span>
 							</td>
@@ -2439,7 +2448,7 @@ final class CADV_Woo_Functionalities {
 
 		$type = $this->normalize_cta_type( $atts['type'] );
 
-		if ( ! $type ) {
+		if ( ! in_array( $type, array( 'quote', 'services', 'newsletter' ), true ) ) {
 			return '';
 		}
 
@@ -2706,6 +2715,10 @@ final class CADV_Woo_Functionalities {
 
 		if ( in_array( $type, array( 'services', 'service', 'servicios', 'servicio' ), true ) ) {
 			return 'services';
+		}
+
+		if ( in_array( $type, array( 'tailored_to', 'tailored-to', 'tailoredto' ), true ) ) {
+			return 'tailored_to';
 		}
 
 		return '';
@@ -3600,7 +3613,7 @@ final class CADV_Woo_Functionalities {
 	 * @return true|WP_Error
 	 */
 	private function validate_cta_request_data( array $data ) {
-		if ( empty( $data['cta_type'] ) ) {
+		if ( ! in_array( $data['cta_type'], array( 'quote', 'services', 'newsletter' ), true ) ) {
 			return new WP_Error( 'cesarandev_wf_invalid_cta_type', __( 'El tipo de formulario no es valido.', 'cadv-woo-functionalities' ) );
 		}
 
@@ -3648,6 +3661,107 @@ final class CADV_Woo_Functionalities {
 	}
 
 	/**
+	 * Ingest a lead emitted by a trusted local CADV plugin.
+	 *
+	 * @param mixed $current Result supplied by a previous receiver.
+	 * @param mixed $payload Versioned lead payload.
+	 * @return array|WP_Error
+	 */
+	public function ingest_external_lead( $current, $payload ) {
+		if ( ! is_wp_error( $current ) ) {
+			return $current;
+		}
+
+		if ( ! is_array( $payload ) ) {
+			return new WP_Error( 'cadv_wf_external_invalid_payload', __( 'Payload externo inválido.', 'cadv-woo-functionalities' ) );
+		}
+
+		$schema  = isset( $payload['schema_version'] ) ? absint( $payload['schema_version'] ) : 0;
+		$source  = isset( $payload['source'] ) ? sanitize_key( $payload['source'] ) : '';
+		$request = isset( $payload['external_request_id'] ) ? sanitize_text_field( $payload['external_request_id'] ) : '';
+		$email   = isset( $payload['email'] ) ? sanitize_email( $payload['email'] ) : '';
+
+		if ( 1 !== $schema || 'cadv-tailored-to-calculator' !== $source ) {
+			return new WP_Error( 'cadv_wf_external_unsupported_source', __( 'Origen o versión no soportados.', 'cadv-woo-functionalities' ) );
+		}
+
+		if ( '' === $request || ! is_email( $email ) ) {
+			return new WP_Error( 'cadv_wf_external_missing_identity', __( 'Falta la identidad de la solicitud.', 'cadv-woo-functionalities' ) );
+		}
+
+		$lead_id  = $this->find_crm_lead_id_by_email( $email );
+		$requests = array();
+
+		if ( $lead_id ) {
+			$requests = (array) get_post_meta( $lead_id, '_cesarandev_wf_tailored_to_requests', true );
+			$requests = array_values( array_filter( $requests, 'is_array' ) );
+		}
+
+		foreach ( $requests as $saved_request ) {
+			if ( isset( $saved_request['external_request_id'] ) && $request === $saved_request['external_request_id'] ) {
+				return array(
+					'lead_id' => (int) $lead_id,
+					'status'  => 'already_synced',
+				);
+			}
+		}
+
+		$data = array(
+			'cta_type'         => 'tailored_to',
+			'full_name'        => sanitize_text_field( $payload['full_name'] ?? '' ),
+			'company'          => sanitize_text_field( $payload['company'] ?? '' ),
+			'position'         => sanitize_text_field( $payload['position'] ?? '' ),
+			'phone'            => sanitize_text_field( $payload['phone'] ?? '' ),
+			'email'            => $email,
+			'product_interest' => 'Tailored To',
+			'demo_date'        => '',
+			'crop_type'        => sanitize_text_field( $payload['crop_type'] ?? '' ),
+			'source_url'       => esc_url_raw( $payload['source_url'] ?? '' ),
+		);
+
+		if ( '' === $data['full_name'] || '' === $data['phone'] ) {
+			return new WP_Error( 'cadv_wf_external_missing_contact', __( 'Faltan datos de contacto.', 'cadv-woo-functionalities' ) );
+		}
+
+		$lead_id = $this->upsert_crm_lead( $data );
+
+		if ( is_wp_error( $lead_id ) ) {
+			return $lead_id;
+		}
+
+		$requests   = (array) get_post_meta( $lead_id, '_cesarandev_wf_tailored_to_requests', true );
+		$requests   = array_values( array_filter( $requests, 'is_array' ) );
+		$requests[] = array(
+			'external_request_id' => $request,
+			'technical_status'    => sanitize_key( $payload['technical_status'] ?? 'simulation' ),
+			'formula_summary'     => sanitize_text_field( $payload['formula_summary'] ?? '' ),
+			'area_ha'             => isset( $payload['area_ha'] ) ? (float) $payload['area_ha'] : 0,
+			'location'            => sanitize_text_field( $payload['location'] ?? '' ),
+			'yield_goal_t_ha'     => isset( $payload['yield_goal_t_ha'] ) ? (float) $payload['yield_goal_t_ha'] : 0,
+			'variety'             => sanitize_text_field( $payload['variety'] ?? '' ),
+			'stage'               => sanitize_key( $payload['stage'] ?? '' ),
+			'primary_goal'        => sanitize_key( $payload['primary_goal'] ?? '' ),
+			'analysis_summary'    => sanitize_text_field( $payload['analysis_summary'] ?? '' ),
+			'irrigation_system'   => sanitize_key( $payload['irrigation_system'] ?? '' ),
+			'readiness_label'     => sanitize_text_field( $payload['readiness_label'] ?? '' ),
+			'request_admin_url'   => esc_url_raw( $payload['request_admin_url'] ?? '' ),
+			'received_at'         => current_time( 'mysql' ),
+		);
+		$requests   = array_slice( $requests, -50 );
+
+		update_post_meta( $lead_id, '_cesarandev_wf_tailored_to_requests', $requests );
+		update_post_meta( $lead_id, '_cesarandev_wf_last_external_request_id', $request );
+		update_post_meta( $lead_id, '_cesarandev_wf_last_formula_summary', sanitize_text_field( $payload['formula_summary'] ?? '' ) );
+		update_post_meta( $lead_id, '_cesarandev_wf_last_technical_status', sanitize_key( $payload['technical_status'] ?? 'simulation' ) );
+		update_post_meta( $lead_id, '_cesarandev_wf_last_request_admin_url', esc_url_raw( $payload['request_admin_url'] ?? '' ) );
+
+		return array(
+			'lead_id' => (int) $lead_id,
+			'status'  => 'synced',
+		);
+	}
+
+	/**
 	 * Create or update a CRM lead by email.
 	 *
 	 * @param array $data Lead data.
@@ -3678,7 +3792,7 @@ final class CADV_Woo_Functionalities {
 		$existing_types = (array) get_post_meta( $lead_id, '_cesarandev_wf_cta_types', true );
 		$existing_types[] = $data['cta_type'];
 		$existing_types = array_values( array_unique( array_filter( $existing_types ) ) );
-		$interactions   = (array) get_post_meta( $lead_id, '_cesarandev_wf_interactions', true );
+		$interactions   = array_values( array_filter( (array) get_post_meta( $lead_id, '_cesarandev_wf_interactions', true ), 'is_array' ) );
 		$interactions[] = array(
 			'type'             => $data['cta_type'],
 			'date'             => current_time( 'mysql' ),
@@ -4184,6 +4298,9 @@ final class CADV_Woo_Functionalities {
 				'Solicitud de eliminacion',
 				'Fecha solicitud eliminacion',
 				'Convertido a usuario',
+				'Último expediente Tailored To',
+				'Última fórmula simulada',
+				'Estado técnico Tailored To',
 			)
 		);
 
@@ -4218,6 +4335,9 @@ final class CADV_Woo_Functionalities {
 					$row['delete_request_status'],
 					$row['delete_requested_at'],
 					$row['customer_id'],
+					'',
+					'',
+					'',
 				)
 			);
 		}
@@ -4253,6 +4373,9 @@ final class CADV_Woo_Functionalities {
 					'',
 					'',
 					$lead['converted_user_id'],
+					$lead['last_request_admin_url'],
+					$lead['last_formula_summary'],
+					$lead['last_technical_status_label'],
 				)
 			);
 		}
@@ -4808,6 +4931,10 @@ final class CADV_Woo_Functionalities {
 				'crm_note'                  => (string) get_post_meta( $lead_id, '_cesarandev_wf_crm_note', true ),
 				'converted_user_id'         => $converted_id,
 				'converted_at'              => (string) get_post_meta( $lead_id, '_cesarandev_wf_converted_at', true ),
+				'last_formula_summary'      => (string) get_post_meta( $lead_id, '_cesarandev_wf_last_formula_summary', true ),
+				'last_technical_status'     => (string) get_post_meta( $lead_id, '_cesarandev_wf_last_technical_status', true ),
+				'last_technical_status_label' => $this->format_tailored_to_technical_status( (string) get_post_meta( $lead_id, '_cesarandev_wf_last_technical_status', true ) ),
+				'last_request_admin_url'    => (string) get_post_meta( $lead_id, '_cesarandev_wf_last_request_admin_url', true ),
 			);
 		}
 
@@ -4904,9 +5031,10 @@ final class CADV_Woo_Functionalities {
 	 */
 	private function format_cta_types_label( array $types ) {
 		$labels = array(
-			'quote'      => __( 'Cotizacion', 'cadv-woo-functionalities' ),
-			'services'   => __( 'Servicios', 'cadv-woo-functionalities' ),
-			'newsletter' => __( 'Newsletter', 'cadv-woo-functionalities' ),
+			'quote'       => __( 'Cotizacion', 'cadv-woo-functionalities' ),
+			'services'    => __( 'Servicios', 'cadv-woo-functionalities' ),
+			'newsletter'  => __( 'Newsletter', 'cadv-woo-functionalities' ),
+			'tailored_to' => __( 'Tailored To', 'cadv-woo-functionalities' ),
 		);
 		$output = array();
 
@@ -4915,6 +5043,20 @@ final class CADV_Woo_Functionalities {
 		}
 
 		return implode( ', ', array_filter( $output ) );
+	}
+
+	/**
+	 * Format the technical status of a Tailored To request.
+	 *
+	 * @param string $status Technical status key.
+	 * @return string
+	 */
+	private function format_tailored_to_technical_status( $status ) {
+		if ( 'simulation' === $status ) {
+			return __( 'Simulación no aprobada', 'cadv-woo-functionalities' );
+		}
+
+		return sanitize_text_field( $status );
 	}
 
 	/**

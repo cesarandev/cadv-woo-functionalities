@@ -1,4 +1,5 @@
 .agents/
+cadv-tailored-to-calculator/
 update-server/config.php
 update-server/packages/*
 !update-server/packages/.gitkeep

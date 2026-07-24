@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.52" src="https://img.shields.io/badge/versión-1.1.52-315c27?style=flat-square">
+  <img alt="Versión 1.1.53" src="https://img.shields.io/badge/versión-1.1.53-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -237,6 +237,8 @@ Estados disponibles:
 
 Los formularios de cotización, servicios y newsletter actualizan un lead por correo electrónico. Cada contacto conserva el historial de tipos de CTA e interacciones, la fuente, el interés, el cultivo y la última fecha de contacto.
 
+La versión 1.1.53 añade el contrato CRM v1 para solicitudes externas Tailored To. El plugin recibe el payload mediante el filtro `cadv_woo_functionalities_ingest_lead`, reutiliza el lead por correo, evita duplicar expedientes por su identificador externo y conserva únicamente un resumen técnico y el enlace al expediente administrado por la calculadora.
+
 Filtros disponibles:
 
 - Nombre, correo o empresa.
@@ -257,7 +259,7 @@ La pestaña **Clientes** agrupa solicitudes y descargas por usuario. La pestaña
 
 ### Exportación CSV
 
-El botón **Descargar CSV filtrado** conserva los filtros activos. El archivo puede incluir solicitudes de fichas, leads o ambos, con datos de contacto, interés, descargas, CRM, seguimiento, eliminación y conversión.
+El botón **Descargar CSV filtrado** conserva los filtros activos. El archivo puede incluir solicitudes de fichas, leads o ambos, con datos de contacto, interés, descargas, CRM, seguimiento, eliminación y conversión. Para Tailored To también incluye el último expediente, la última fórmula simulada y su estado técnico.
 
 ## Marketplace
 
