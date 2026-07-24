@@ -28,6 +28,47 @@
 		});
 	}
 
+	function initRecaptchaWidgets() {
+		var widgets;
+
+		if (!window.grecaptcha || typeof window.grecaptcha.render !== 'function') {
+			return;
+		}
+
+		widgets = document.querySelectorAll('.cesarandev-wf-recaptcha__widget:not([data-widget-id])');
+		toArray(widgets).forEach(function (widget) {
+			var widgetId = window.grecaptcha.render(widget, {
+				sitekey: widget.getAttribute('data-sitekey') || '',
+				theme: widget.getAttribute('data-theme') || 'light'
+			});
+			widget.setAttribute('data-widget-id', String(widgetId));
+		});
+	}
+
+	function resetFormRecaptcha(form) {
+		var widget = form ? form.querySelector('.cesarandev-wf-recaptcha__widget[data-widget-id]') : null;
+		var widgetId = widget ? parseInt(widget.getAttribute('data-widget-id'), 10) : NaN;
+
+		if (window.grecaptcha && typeof window.grecaptcha.reset === 'function' && !Number.isNaN(widgetId)) {
+			window.grecaptcha.reset(widgetId);
+		}
+	}
+
+	function hasCaptchaResponse(formData) {
+		return Boolean(
+			String(formData.get('captcha_answer') || '').trim() ||
+			String(formData.get('g-recaptcha-response') || '').trim()
+		);
+	}
+
+	var previousRecaptchaOnload = window.CadvRecaptchaOnload;
+	window.CadvRecaptchaOnload = function () {
+		if (typeof previousRecaptchaOnload === 'function') {
+			previousRecaptchaOnload();
+		}
+		initRecaptchaWidgets();
+	};
+
 	function postData(action, formData) {
 		var body = new URLSearchParams();
 		body.set('action', action);
@@ -270,6 +311,7 @@
 		if (openDialog && dialog) {
 			openDialog.addEventListener('click', function () {
 				setMessage(contactMessage, '');
+				initRecaptchaWidgets();
 				if (typeof dialog.showModal === 'function') {
 					dialog.showModal();
 				} else {
@@ -296,10 +338,20 @@
 				if (busy || !contactForm.reportValidity()) {
 					return;
 				}
+				var contactData = new FormData(contactForm);
+				if (!hasCaptchaResponse(contactData)) {
+					setMessage(
+						contactMessage,
+						config.messages && config.messages.captcha ? config.messages.captcha : 'Completa la verificación de seguridad.',
+						'error'
+					);
+					return;
+				}
 				busy = true;
 				var submitButton = contactForm.querySelector('[type="submit"]');
 				var payload = new FormData(wizard);
-				new FormData(contactForm).forEach(function (value, key) {
+				contactForm.setAttribute('aria-busy', 'true');
+				contactData.forEach(function (value, key) {
 					payload.set(key, value);
 				});
 				if (latestResult && latestResult.formula) {
@@ -325,6 +377,8 @@
 					})
 					.finally(function () {
 						busy = false;
+						contactForm.removeAttribute('aria-busy');
+						resetFormRecaptcha(contactForm);
 						if (submitButton) {
 							submitButton.disabled = false;
 						}

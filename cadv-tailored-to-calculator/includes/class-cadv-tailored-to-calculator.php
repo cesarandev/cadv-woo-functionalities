@@ -14,14 +14,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class CADV_Tailored_To_Calculator {
 
-	const SHORTCODE       = 'cadv_tailored_to_calculator';
-	const REQUEST_TYPE    = 'cadv_tt_request';
-	const PREVIEW_ACTION  = 'cadv_tt_preview_formula';
-	const SUBMIT_ACTION   = 'cadv_tt_submit_request';
-	const NONCE_ACTION    = 'cadv_tt_public_calculator';
-	const CRM_FILTER      = 'cadv_woo_functionalities_ingest_lead';
-	const MAX_PREVIEWS    = 50;
-	const MAX_SUBMISSIONS = 10;
+	const SHORTCODE                   = 'cadv_tailored_to_calculator';
+	const REQUEST_TYPE                = 'cadv_tt_request';
+	const PREVIEW_ACTION              = 'cadv_tt_preview_formula';
+	const SUBMIT_ACTION               = 'cadv_tt_submit_request';
+	const NONCE_ACTION                = 'cadv_tt_public_calculator';
+	const CRM_FILTER                  = 'cadv_woo_functionalities_ingest_lead';
+	const OPTION_PHONE                = 'cadv_woo_functionalities_whatsapp_phone';
+	const OPTION_RECAPTCHA_SITE_KEY   = 'cadv_woo_functionalities_recaptcha_site_key';
+	const OPTION_RECAPTCHA_SECRET_KEY = 'cadv_woo_functionalities_recaptcha_secret_key';
+	const MAX_PREVIEWS                = 50;
+	const MAX_SUBMISSIONS             = 10;
+	const CAPTCHA_MAX_AGE             = 12 * HOUR_IN_SECONDS;
 
 	/**
 	 * Singleton.
@@ -153,8 +157,7 @@ final class CADV_Tailored_To_Calculator {
 		wp_enqueue_script( 'cadv-tailored-to' );
 
 		if ( ! $this->assets_localized ) {
-			$phone = preg_replace( '/\D+/', '', (string) get_option( 'cadv_woo_functionalities_whatsapp_phone', '573164781412' ) );
-			$phone = (string) apply_filters( 'cadv_tt_whatsapp_phone', $phone );
+			$phone = $this->get_configured_whatsapp_phone();
 
 			wp_localize_script(
 				'cadv-tailored-to',
@@ -171,6 +174,7 @@ final class CADV_Tailored_To_Calculator {
 						'loading'  => __( 'Construyendo la simulación...', 'cadv-tailored-to' ),
 						'saving'   => __( 'Guardando la solicitud...', 'cadv-tailored-to' ),
 						'error'    => __( 'No pudimos procesar la solicitud. Inténtalo de nuevo.', 'cadv-tailored-to' ),
+						'captcha'  => __( 'Completa la verificación de seguridad.', 'cadv-tailored-to' ),
 					),
 				)
 			);
@@ -200,9 +204,7 @@ final class CADV_Tailored_To_Calculator {
 	public function render_shortcode( $atts = array() ) {
 		$atts = shortcode_atts(
 			array(
-				'title'       => __( 'Construya su perfil Tailored To', 'cadv-tailored-to' ),
-				'description' => __( 'Una simulación guiada para preparar una solicitud de fertilización personalizada.', 'cadv-tailored-to' ),
-				'accent'      => '#203212',
+				'accent' => '#203212',
 			),
 			$atts,
 			self::SHORTCODE
@@ -213,22 +215,13 @@ final class CADV_Tailored_To_Calculator {
 		$crops       = CADV_TT_Formula_Engine::get_crop_profiles();
 		$stages      = CADV_TT_Formula_Engine::get_stage_profiles();
 		$privacy_url = get_privacy_policy_url();
+		$whatsapp    = $this->get_configured_whatsapp_phone();
 		$accent      = sanitize_hex_color( $atts['accent'] );
 		$accent      = $accent ? $accent : '#203212';
 
 		ob_start();
 		?>
 		<section class="cadv-tt" id="<?php echo esc_attr( $instance_id ); ?>" style="--cadv-tt-accent: <?php echo esc_attr( $accent ); ?>;" data-cadv-tt-calculator>
-			<header class="cadv-tt__intro">
-				<span class="cadv-tt__eyebrow"><?php esc_html_e( 'Tailored To · Simulador', 'cadv-tailored-to' ); ?></span>
-				<h2><?php echo esc_html( $atts['title'] ); ?></h2>
-				<p><?php echo esc_html( $atts['description'] ); ?></p>
-				<div class="cadv-tt__notice">
-					<strong><?php esc_html_e( 'Alcance de esta versión:', 'cadv-tailored-to' ); ?></strong>
-					<?php esc_html_e( 'genera una fórmula N-P₂O₅-K₂O demostrativa. No calcula dosis, no reemplaza análisis ni constituye una recomendación agronómica.', 'cadv-tailored-to' ); ?>
-				</div>
-			</header>
-
 			<form class="cadv-tt__wizard" data-cadv-tt-wizard novalidate>
 				<nav class="cadv-tt__progress" aria-label="<?php esc_attr_e( 'Progreso del simulador', 'cadv-tailored-to' ); ?>">
 					<?php foreach ( array( 1 => 'Cultivo', 2 => 'Lote', 3 => 'Diagnóstico', 4 => 'Aplicación', 5 => 'Manejo', 6 => 'Resultado' ) as $number => $label ) : ?>
@@ -600,8 +593,13 @@ final class CADV_Tailored_To_Calculator {
 					</div>
 					<p class="cadv-tt__disclaimer"><?php esc_html_e( 'La fórmula mostrada es un ejercicio demostrativo y no una composición garantizada de Tailored To. Debe validarse técnica y comercialmente por Agrobrokers.', 'cadv-tailored-to' ); ?></p>
 					<div class="cadv-tt__result-actions">
-						<button type="button" class="cadv-tt__button cadv-tt__button--gold" data-cadv-tt-open-contact><?php esc_html_e( 'Enviar al equipo técnico', 'cadv-tailored-to' ); ?></button>
-						<a class="cadv-tt__button cadv-tt__button--whatsapp" href="#" target="_blank" rel="noopener noreferrer" data-cadv-tt-whatsapp><?php esc_html_e( 'Consultar por WhatsApp', 'cadv-tailored-to' ); ?></a>
+						<button type="button" class="cadv-tt__button cadv-tt__button--primary" data-cadv-tt-open-contact><?php esc_html_e( 'Enviar al equipo técnico', 'cadv-tailored-to' ); ?></button>
+						<?php if ( $whatsapp ) : ?>
+							<a class="cadv-tt__button cadv-tt__button--whatsapp" href="#" target="_blank" rel="noopener noreferrer" data-cadv-tt-whatsapp>
+								<?php echo $this->get_whatsapp_icon_svg(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Static SVG. ?>
+								<span><?php esc_html_e( 'Consultar por WhatsApp', 'cadv-tailored-to' ); ?></span>
+							</a>
+						<?php endif; ?>
 					</div>
 					<div class="cadv-tt__nav">
 						<button type="button" class="cadv-tt__button cadv-tt__button--outline" data-cadv-tt-back><span aria-hidden="true">←</span><?php esc_html_e( 'Atrás', 'cadv-tailored-to' ); ?></button>
@@ -615,8 +613,7 @@ final class CADV_Tailored_To_Calculator {
 				<span class="cadv-tt__eyebrow"><?php esc_html_e( 'Revisión Tailored To', 'cadv-tailored-to' ); ?></span>
 				<h3 id="<?php echo esc_attr( $instance_id ); ?>-dialog-title"><?php esc_html_e( 'Enviar la simulación al equipo técnico', 'cadv-tailored-to' ); ?></h3>
 				<p><?php esc_html_e( 'Guardaremos el expediente y un asesor podrá solicitar los análisis necesarios.', 'cadv-tailored-to' ); ?></p>
-				<form data-cadv-tt-contact-form novalidate>
-					<input type="text" name="website" class="cadv-tt__honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" />
+				<form class="cadv-tt__contact-form" data-cadv-tt-contact-form novalidate>
 					<input type="hidden" name="source_url" value="<?php echo esc_url( $this->current_url() ); ?>" />
 					<div class="cadv-tt__field-grid">
 						<label class="cadv-tt__field"><span><?php esc_html_e( 'Nombre completo *', 'cadv-tailored-to' ); ?></span><input type="text" name="full_name" maxlength="120" autocomplete="name" required /></label>
@@ -630,6 +627,7 @@ final class CADV_Tailored_To_Calculator {
 						<span><?php esc_html_e( 'Acepto la Política de Privacidad y el tratamiento de datos.', 'cadv-tailored-to' ); ?>
 						<?php if ( $privacy_url ) : ?><a href="<?php echo esc_url( $privacy_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Consultar política', 'cadv-tailored-to' ); ?></a><?php endif; ?></span>
 					</label>
+					<?php $this->render_public_captcha_fields( 'tailored_to' ); ?>
 					<div class="cadv-tt__message" data-cadv-tt-contact-message role="status" aria-live="polite"></div>
 					<button type="submit" class="cadv-tt__button cadv-tt__button--primary cadv-tt__button--full"><?php esc_html_e( 'Guardar y enviar solicitud', 'cadv-tailored-to' ); ?></button>
 				</form>
@@ -660,10 +658,10 @@ final class CADV_Tailored_To_Calculator {
 	 */
 	public function handle_submission() {
 		$this->verify_nonce();
-		$this->enforce_rate_limit( 'submit', self::MAX_SUBMISSIONS );
+		$security = $this->validate_public_submission( 'tailored_to', self::MAX_SUBMISSIONS );
 
-		if ( '' !== $this->post_string( 'website' ) ) {
-			wp_send_json_error( array( 'message' => __( 'No se pudo procesar la solicitud.', 'cadv-tailored-to' ) ), 400 );
+		if ( is_wp_error( $security ) ) {
+			wp_send_json_error( array( 'message' => $security->get_error_message() ), $security->get_error_data() ?: 400 );
 		}
 
 		$data       = $this->get_context_data();
@@ -975,6 +973,199 @@ final class CADV_Tailored_To_Calculator {
 	}
 
 	/**
+	 * Render the same CAPTCHA and honeypot controls used by CADV public forms.
+	 *
+	 * Google reCAPTCHA v2 is used when the parent plugin keys are configured.
+	 * Otherwise, a signed mathematical challenge keeps the form protected.
+	 *
+	 * @param string $scope Form scope.
+	 */
+	private function render_public_captcha_fields( $scope ) {
+		if ( $this->is_recaptcha_configured() ) {
+			wp_enqueue_script(
+				'cadv-google-recaptcha',
+				'https://www.google.com/recaptcha/api.js?onload=CadvRecaptchaOnload&render=explicit',
+				array( 'cadv-tailored-to' ),
+				null,
+				true
+			);
+			wp_script_add_data( 'cadv-google-recaptcha', 'strategy', 'defer' );
+			?>
+			<div class="cadv-tt__recaptcha cesarandev-wf-recaptcha" data-cadv-recaptcha>
+				<div class="cadv-tt__recaptcha-widget cesarandev-wf-recaptcha__widget" data-sitekey="<?php echo esc_attr( $this->get_recaptcha_site_key() ); ?>" data-theme="light"></div>
+			</div>
+			<label class="cadv-tt__honeypot" aria-hidden="true">
+				<span><?php esc_html_e( 'No completes este campo', 'cadv-tailored-to' ); ?></span>
+				<input type="text" name="website" value="" tabindex="-1" autocomplete="off" />
+			</label>
+			<?php
+			return;
+		}
+
+		$left    = wp_rand( 2, 9 );
+		$right   = wp_rand( 1, 9 );
+		$payload = $this->base64_url_encode(
+			wp_json_encode(
+				array(
+					'scope'  => sanitize_key( $scope ),
+					'left'   => $left,
+					'right'  => $right,
+					'issued' => time(),
+				)
+			)
+		);
+		$token   = $payload . '.' . hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
+		?>
+		<div class="cadv-tt__captcha">
+			<label class="cadv-tt__field">
+				<span><?php echo esc_html( sprintf( __( 'Verificación: ¿cuánto es %1$d + %2$d? *', 'cadv-tailored-to' ), $left, $right ) ); ?></span>
+				<input type="text" name="captcha_answer" inputmode="numeric" pattern="[0-9]+" maxlength="2" autocomplete="off" required />
+			</label>
+			<input type="hidden" name="captcha_token" value="<?php echo esc_attr( $token ); ?>" />
+			<label class="cadv-tt__honeypot" aria-hidden="true">
+				<span><?php esc_html_e( 'No completes este campo', 'cadv-tailored-to' ); ?></span>
+				<input type="text" name="website" value="" tabindex="-1" autocomplete="off" />
+			</label>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Validate rate limit, honeypot and CAPTCHA for the public contact form.
+	 *
+	 * @param string $scope Form scope.
+	 * @param int    $limit Maximum attempts per hour.
+	 * @return true|WP_Error
+	 */
+	private function validate_public_submission( $scope, $limit ) {
+		$rate_limit = $this->consume_public_rate_limit( $scope, $limit );
+
+		if ( is_wp_error( $rate_limit ) ) {
+			return $rate_limit;
+		}
+
+		if ( '' !== sanitize_text_field( $this->post_string( 'website' ) ) ) {
+			return new WP_Error( 'cadv_tt_bot_detected', __( 'No se pudo validar el formulario. Recarga la página e inténtalo nuevamente.', 'cadv-tailored-to' ), 400 );
+		}
+
+		if ( $this->is_recaptcha_configured() ) {
+			return $this->validate_recaptcha_response( $scope );
+		}
+
+		$token  = sanitize_text_field( $this->post_string( 'captcha_token' ) );
+		$answer = sanitize_text_field( $this->post_string( 'captcha_answer' ) );
+
+		if ( '' === $token || strlen( $token ) > 512 || ! preg_match( '/^[0-9]{1,2}$/', $answer ) ) {
+			return new WP_Error( 'cadv_tt_invalid_captcha', __( 'Completa correctamente la verificación de seguridad.', 'cadv-tailored-to' ), 400 );
+		}
+
+		$parts = explode( '.', $token, 2 );
+
+		if ( 2 !== count( $parts ) || ! hash_equals( hash_hmac( 'sha256', $parts[0], wp_salt( 'auth' ) ), $parts[1] ) ) {
+			return new WP_Error( 'cadv_tt_invalid_captcha_token', __( 'La verificación de seguridad no es válida. Recarga la página.', 'cadv-tailored-to' ), 400 );
+		}
+
+		$decoded = $this->base64_url_decode( $parts[0] );
+		$captcha = false !== $decoded ? json_decode( $decoded, true ) : null;
+		$issued  = is_array( $captcha ) && isset( $captcha['issued'] ) ? absint( $captcha['issued'] ) : 0;
+
+		if (
+			! is_array( $captcha )
+			|| sanitize_key( $scope ) !== ( $captcha['scope'] ?? '' )
+			|| $issued > time() + 300
+			|| $issued < time() - self::CAPTCHA_MAX_AGE
+			|| ! isset( $captcha['left'], $captcha['right'] )
+		) {
+			return new WP_Error( 'cadv_tt_expired_captcha', __( 'La verificación de seguridad venció. Recarga la página.', 'cadv-tailored-to' ), 400 );
+		}
+
+		$expected = (string) ( absint( $captcha['left'] ) + absint( $captcha['right'] ) );
+
+		if ( ! hash_equals( $expected, $answer ) ) {
+			return new WP_Error( 'cadv_tt_wrong_captcha', __( 'La respuesta de verificación no es correcta.', 'cadv-tailored-to' ), 400 );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check whether the parent plugin's reCAPTCHA v2 keys are configured.
+	 *
+	 * @return bool
+	 */
+	private function is_recaptcha_configured() {
+		return '' !== $this->get_recaptcha_site_key() && '' !== $this->get_recaptcha_secret_key();
+	}
+
+	/**
+	 * Get the configured public reCAPTCHA key.
+	 *
+	 * @return string
+	 */
+	private function get_recaptcha_site_key() {
+		$value = defined( 'CADV_RECAPTCHA_SITE_KEY' ) ? CADV_RECAPTCHA_SITE_KEY : get_option( self::OPTION_RECAPTCHA_SITE_KEY, '' );
+
+		return trim( sanitize_text_field( (string) $value ) );
+	}
+
+	/**
+	 * Get the configured private reCAPTCHA key.
+	 *
+	 * @return string
+	 */
+	private function get_recaptcha_secret_key() {
+		$value = defined( 'CADV_RECAPTCHA_SECRET_KEY' ) ? CADV_RECAPTCHA_SECRET_KEY : get_option( self::OPTION_RECAPTCHA_SECRET_KEY, '' );
+
+		return trim( sanitize_text_field( (string) $value ) );
+	}
+
+	/**
+	 * Validate a Google reCAPTCHA v2 response.
+	 *
+	 * @param string $scope Form scope.
+	 * @return true|WP_Error
+	 */
+	private function validate_recaptcha_response( $scope ) {
+		$token = sanitize_text_field( $this->post_string( 'g-recaptcha-response' ) );
+
+		if ( '' === $token || strlen( $token ) > 8192 ) {
+			return new WP_Error( 'cadv_tt_recaptcha_missing', __( 'Completa la verificación "No soy un robot".', 'cadv-tailored-to' ), 400 );
+		}
+
+		$body      = array(
+			'secret'   => $this->get_recaptcha_secret_key(),
+			'response' => $token,
+		);
+		$client_ip = $this->get_public_client_ip( $scope );
+
+		if ( 'unknown' !== $client_ip ) {
+			$body['remoteip'] = $client_ip;
+		}
+
+		$response = wp_remote_post(
+			'https://www.google.com/recaptcha/api/siteverify',
+			array(
+				'timeout' => 10,
+				'body'    => $body,
+			)
+		);
+
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			return new WP_Error( 'cadv_tt_recaptcha_unavailable', __( 'No pudimos comprobar la verificación de seguridad. Inténtalo nuevamente.', 'cadv-tailored-to' ), 503 );
+		}
+
+		$result = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( ! is_array( $result ) || empty( $result['success'] ) ) {
+			do_action( 'cadv_tailored_to_recaptcha_failed', $result, sanitize_key( $scope ) );
+
+			return new WP_Error( 'cadv_tt_recaptcha_failed', __( 'La verificación de seguridad no fue válida o venció. Inténtalo nuevamente.', 'cadv-tailored-to' ), 400 );
+		}
+
+		return true;
+	}
+
+	/**
 	 * Verify public nonce.
 	 */
 	private function verify_nonce() {
@@ -990,13 +1181,74 @@ final class CADV_Tailored_To_Calculator {
 	 * @param int    $limit Attempts/hour.
 	 */
 	private function enforce_rate_limit( $scope, $limit ) {
-		$ip  = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
-		$key = 'cadv_tt_' . sanitize_key( $scope ) . '_' . substr( md5( $ip ), 0, 20 );
-		$hit = (int) get_transient( $key );
-		if ( $hit >= $limit ) {
-			wp_send_json_error( array( 'message' => __( 'Alcanzaste el límite temporal de solicitudes. Inténtalo más tarde.', 'cadv-tailored-to' ) ), 429 );
+		$result = $this->consume_public_rate_limit( $scope, $limit );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ), $result->get_error_data() ?: 429 );
 		}
-		set_transient( $key, $hit + 1, HOUR_IN_SECONDS );
+	}
+
+	/**
+	 * Consume one rate-limit attempt without exposing the client IP in storage.
+	 *
+	 * @param string $scope Scope.
+	 * @param int    $limit Attempts per hour.
+	 * @return true|WP_Error
+	 */
+	private function consume_public_rate_limit( $scope, $limit ) {
+		$ip      = $this->get_public_client_ip( $scope );
+		$key     = 'cadv_tt_rate_' . md5( sanitize_key( $scope ) . '|' . hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) ) );
+		$attempt = (int) get_transient( $key );
+		$limit   = max( 1, absint( $limit ) );
+
+		if ( $attempt >= $limit ) {
+			return new WP_Error( 'cadv_tt_rate_limited', __( 'Has realizado demasiados intentos. Espera una hora antes de volver a intentarlo.', 'cadv-tailored-to' ), 429 );
+		}
+
+		set_transient( $key, $attempt + 1, HOUR_IN_SECONDS );
+
+		return true;
+	}
+
+	/**
+	 * Resolve a validated client IP, honoring the parent plugin proxy filter.
+	 *
+	 * @param string $scope Public form scope.
+	 * @return string
+	 */
+	private function get_public_client_ip( $scope ) {
+		$remote_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		$ip             = filter_var( $remote_address, FILTER_VALIDATE_IP ) ? $remote_address : 'unknown';
+		$ip             = apply_filters( 'cadv_woo_functionalities_client_ip', $ip, $scope );
+
+		return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : 'unknown';
+	}
+
+	/**
+	 * Encode binary-safe data for a URL token.
+	 *
+	 * @param string $value Raw value.
+	 * @return string
+	 */
+	private function base64_url_encode( $value ) {
+		return rtrim( strtr( base64_encode( (string) $value ), '+/', '-_' ), '=' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+	}
+
+	/**
+	 * Decode URL-safe Base64 data.
+	 *
+	 * @param string $value Encoded value.
+	 * @return string|false
+	 */
+	private function base64_url_decode( $value ) {
+		$value   = strtr( (string) $value, '-_', '+/' );
+		$padding = strlen( $value ) % 4;
+
+		if ( $padding ) {
+			$value .= str_repeat( '=', 4 - $padding );
+		}
+
+		return base64_decode( $value, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 	}
 
 	/**
@@ -1018,6 +1270,27 @@ final class CADV_Tailored_To_Calculator {
 		$uri  = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
 		$path = wp_parse_url( $uri, PHP_URL_PATH );
 		return home_url( is_string( $path ) && '' !== $path ? $path : '/' );
+	}
+
+	/**
+	 * Get the WhatsApp phone stored by the parent plugin configuration.
+	 *
+	 * @return string
+	 */
+	private function get_configured_whatsapp_phone() {
+		$phone = (string) get_option( self::OPTION_PHONE, '' );
+		$phone = (string) apply_filters( 'cadv_tt_whatsapp_phone', $phone );
+
+		return preg_replace( '/\D+/', '', $phone );
+	}
+
+	/**
+	 * Return the same WhatsApp icon used by the parent plugin.
+	 *
+	 * @return string
+	 */
+	private function get_whatsapp_icon_svg() {
+		return '<svg class="cadv-tt__button-icon" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.1 17.2c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6.1-.3-.2-1.2-.4-2.3-1.4-.8-.7-1.4-1.7-1.6-1.9-.2-.3 0-.4.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.2-.7-1.7-1-2.3-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4 0-.1-.3-.2-.6-.4z"/><path fill="currentColor" d="M16 3C8.8 3 3 8.8 3 16c0 2.4.7 4.7 1.9 6.7L3.7 29l6.5-1.7c1.9 1 4 1.6 6.2 1.6 7.2 0 13-5.8 13-13S23.2 3 16 3zm0 23.7c-2 0-3.9-.5-5.6-1.5l-.4-.2-3.9 1 1-3.8-.2-.4c-1.1-1.7-1.6-3.8-1.6-5.8C5.3 10.1 10.1 5.3 16 5.3S26.7 10.1 26.7 16 21.9 26.7 16 26.7z"/></svg>';
 	}
 
 	/**

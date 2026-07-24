@@ -3,7 +3,7 @@
  * Plugin Name: CADV Tailored To Calculator
  * Plugin URI: https://cesarandev.com/
  * Description: Simulador técnico-comercial para construir solicitudes de fórmulas Tailored To y enviarlas al equipo Agrobrokers.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Author: CADV
  * Author URI: https://cesarandev.com/
  * Text Domain: cadv-tailored-to
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CADV_TT_VERSION', '0.2.0' );
+define( 'CADV_TT_VERSION', '0.3.0' );
 define( 'CADV_TT_FILE', __FILE__ );
 define( 'CADV_TT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CADV_TT_URL', plugin_dir_url( __FILE__ ) );

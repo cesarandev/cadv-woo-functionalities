@@ -2,7 +2,7 @@
 
 Plugin independiente de WordPress para preparar solicitudes de formulación personalizada Tailored To. Se integra visualmente con CADV Woo Functionalities, pero conserva su propio repositorio, almacenamiento y ciclo de versiones.
 
-## Alcance de la versión 0.2.0
+## Alcance de la versión 0.3.0
 
 - Asistente profesional de seis etapas compatible con Elementor mediante shortcode.
 - Divulgación progresiva: los detalles de suelo, foliar, agua y fertirriego aparecen solo cuando corresponden.
@@ -16,7 +16,8 @@ Plugin independiente de WordPress para preparar solicitudes de formulación pers
 - Dosis por hectárea y cantidad total bloqueadas hasta contar con análisis de suelo, análisis foliar y validación de la meta de rendimiento.
 - Expediente propio en `Solicitudes Tailored To`.
 - Envío opcional al CRM de CADV Woo mediante un contrato desacoplado.
-- WhatsApp con resumen no prescriptivo.
+- WhatsApp con resumen no prescriptivo y el número definido en la configuración inicial de CADV Woo.
+- Formulario protegido con nonce, honeypot, límite por IP y Google reCAPTCHA v2; si las claves no están configuradas, utiliza un reto matemático firmado.
 
 La fórmula que aparece en pantalla no representa una composición comercial aprobada ni una recomendación agronómica. Tailored To se trata como una capacidad de formulación personalizada, no como un producto de fórmula fija.
 
@@ -35,7 +36,7 @@ La fórmula que aparece en pantalla no representa una composición comercial apr
 Atributos opcionales:
 
 ```text
-[cadv_tailored_to_calculator title="Construya su fórmula" description="Prepare su solicitud Tailored To" accent="#203212"]
+[cadv_tailored_to_calculator accent="#203212"]
 ```
 
 El plugin no exige Elementor y funciona en cualquier área de WordPress que procese shortcodes.
@@ -53,6 +54,8 @@ La instrucción completa y el contrato están en [docs/cadv-woo-crm-integration.
 ## Datos y privacidad
 
 El formulario guarda los datos de contacto y el contexto declarado por el usuario. No solicita archivos de laboratorio en esta versión. El CRM recibe únicamente un resumen comercial y un enlace al expediente técnico; el plugin de la calculadora conserva el detalle.
+
+La calculadora reutiliza el número de WhatsApp y las claves de Google reCAPTCHA v2 configurados en **WooCommerce → CADV Woo Functionalities**. Si no hay número configurado, el botón de WhatsApp permanece oculto. Las constantes `CADV_RECAPTCHA_SITE_KEY` y `CADV_RECAPTCHA_SECRET_KEY` también tienen prioridad, igual que en el plugin padre.
 
 Antes de producción:
 
