@@ -11,7 +11,7 @@
 
 # CADV Woo Functionalities
 
-Plugin privado para convertir una instalación de WooCommerce en una plataforma comercial B2B: catálogo filtrable, solicitudes de fichas técnicas, captación de leads, CRM operativo, CTAs para Elementor, contacto por WhatsApp y actualizaciones controladas desde un servidor propio.
+Plugin privado para convertir una instalación de WooCommerce en una plataforma comercial B2B: catálogo filtrable, solicitudes de fichas técnicas, captación de leads, CRM operativo, recepción de solicitudes Tailored To, CTAs para Elementor, contacto por WhatsApp, blog categorizado y actualizaciones controladas desde un servidor propio.
 
 El plugin utiliza productos, categorías, usuarios, pedidos y permisos de descarga nativos de WooCommerce. No requiere una base de datos paralela ni un framework JavaScript adicional.
 
@@ -23,7 +23,9 @@ El plugin utiliza productos, categorías, usuarios, pedidos y permisos de descar
 - [Configuración inicial](#configuración-inicial)
 - [Fichas técnicas](#fichas-técnicas)
 - [CRM comercial](#crm-comercial)
+- [Integración externa con Tailored To](#integración-externa-con-tailored-to)
 - [Marketplace](#marketplace)
+- [Blog categorizado](#blog-categorizado)
 - [CTAs y formularios](#ctas-y-formularios)
 - [WhatsApp](#whatsapp)
 - [Referencia de shortcodes](#referencia-de-shortcodes)
@@ -41,7 +43,8 @@ El plugin utiliza productos, categorías, usuarios, pedidos y permisos de descar
 | --- | --- |
 | Fichas técnicas | Solicita datos B2B, crea o vincula el cliente y concede acceso a los descargables del producto. |
 | Marketplace | Muestra productos por línea comercial con búsqueda, filtro ICA, carga progresiva y colores de categoría. |
-| CRM | Centraliza solicitudes, leads, clientes, descargas, seguimientos y solicitudes de eliminación. |
+| CRM | Centraliza solicitudes, leads, clientes, descargas, seguimientos, solicitudes Tailored To y solicitudes de eliminación. |
+| Blog categorizado | Presenta entradas en tarjetas, filtra por categorías y carga más resultados mediante AJAX. |
 | CTAs | Captura cotizaciones, newsletter y solicitudes de servicios sin crear usuarios ni pedidos. |
 | WhatsApp | Genera botones o URL dinámicas con mensajes configurables y variables de página/producto. |
 | Portal de cliente | Restringe la cuenta de clientes creados por el plugin a descargas y datos esenciales. |
@@ -132,6 +135,12 @@ Buscador externo, por ejemplo en la portada:
 
 ```text
 [cadv_marketplace_search target="/marketplace/"]
+```
+
+Cuadrícula del blog con filtros por categoría:
+
+```text
+[cadv_blog_categorias]
 ```
 
 ## Fichas técnicas
@@ -237,8 +246,6 @@ Estados disponibles:
 
 Los formularios de cotización, servicios y newsletter actualizan un lead por correo electrónico. Cada contacto conserva el historial de tipos de CTA e interacciones, la fuente, el interés, el cultivo y la última fecha de contacto.
 
-La versión 1.1.53 añade el contrato CRM v1 para solicitudes externas Tailored To. El plugin recibe el payload mediante el filtro `cadv_woo_functionalities_ingest_lead`, reutiliza el lead por correo, evita duplicar expedientes por su identificador externo y conserva únicamente un resumen técnico y el enlace al expediente administrado por la calculadora.
-
 Filtros disponibles:
 
 - Nombre, correo o empresa.
@@ -252,6 +259,41 @@ Filtros disponibles:
 - Rango de fechas.
 
 Cuando un lead solicita posteriormente una ficha técnica con el mismo correo, el plugin reutiliza sus datos faltantes y marca el lead como convertido.
+
+### Integración externa con Tailored To
+
+La versión 1.1.53 incorpora el receptor CRM v1 para el plugin independiente **CADV Tailored To Calculator**. La calculadora permanece fuera de este repositorio y su carpeta local está excluida mediante `.gitignore`; ambos plugins se comunican en la misma instalación de WordPress mediante el filtro:
+
+```php
+$result = apply_filters(
+	'cadv_woo_functionalities_ingest_lead',
+	new WP_Error( 'cadv_wf_bridge_unavailable' ),
+	$payload
+);
+```
+
+El receptor acepta exclusivamente `schema_version = 1` y `source = cadv-tailored-to-calculator`. El payload utiliza:
+
+| Campo | Uso |
+| --- | --- |
+| `external_request_id` | Código único del expediente; evita sincronizaciones duplicadas. |
+| `full_name`, `email`, `phone`, `company`, `position` | Identificación y contacto comercial. |
+| `crop_type`, `variety`, `stage`, `primary_goal` | Contexto resumido del cultivo. |
+| `formula_summary`, `technical_status`, `readiness_label` | Resultado y estado de la simulación. |
+| `area_ha`, `yield_goal_t_ha`, `location` | Dimensión y ubicación declaradas. |
+| `analysis_summary`, `irrigation_system` | Resumen de análisis y manejo hídrico. |
+| `source_url`, `request_admin_url` | Página de origen y enlace al expediente detallado en la calculadora. |
+
+Flujo de recepción:
+
+1. Valida versión, origen, identificador externo y datos mínimos de contacto.
+2. Busca el lead por correo y crea uno nuevo solo cuando no existe.
+3. Detecta el mismo `external_request_id` y responde `already_synced` sin duplicarlo.
+4. Guarda una instantánea técnica resumida; el expediente completo continúa bajo responsabilidad de la calculadora.
+5. Conserva hasta 50 expedientes Tailored To por lead y actualiza los metadatos del último envío.
+6. Devuelve `lead_id` y estado `synced` para que la calculadora marque su solicitud.
+
+En el CRM, Tailored To aparece como tipo de CTA, puede filtrarse junto con los demás leads y expone el último expediente, la fórmula simulada, el estado técnico y el enlace administrativo. La exportación CSV incluye estos mismos campos.
 
 ### Clientes y eliminaciones
 
@@ -346,6 +388,57 @@ La línea puede indicarse por ID, slug o nombre visible:
 | --- | --- |
 | `target` | URL de la página que contiene `[cadv_marketplace]`. Si se omite, usa la página actual y luego la portada. |
 | `placeholder` | Texto mostrado dentro del buscador. |
+
+## Blog categorizado
+
+El shortcode muestra entradas publicadas en una cuadrícula responsive con filtros por categoría:
+
+```text
+[cadv_blog_categorias]
+```
+
+De forma predeterminada incluye todas las categorías con entradas, ordenadas alfabéticamente, y carga seis tarjetas por página en tres columnas. Cada tarjeta presenta:
+
+- imagen destacada con carga diferida;
+- categoría principal y color de acento;
+- fecha de publicación;
+- tiempo estimado de lectura a 200 palabras por minuto;
+- título, extracto y enlace a la entrada;
+- fondo gráfico alternativo cuando no existe imagen.
+
+Configuración completa:
+
+```text
+[cadv_blog_categorias
+  categories="palma-de-aceite,banano,arroz,maiz,suelos"
+  per_page="6"
+  columns="3"
+  excerpt_words="18"
+  orderby="date"
+  order="DESC"
+  all_label="Todos"
+  load_more_label="Cargar más artículos"
+]
+```
+
+| Atributo | Predeterminado | Valores |
+| --- | --- | --- |
+| `categories` | Vacío | Slugs o IDs separados por comas; respeta el orden indicado. |
+| `per_page` | `6` | Entre `1` y `24`. |
+| `columns` | `3` | Entre `1` y `4`; se adapta automáticamente en tablet y móvil. |
+| `excerpt_words` | `18` | Entre `5` y `60`. |
+| `orderby` | `date` | `date`, `title`, `menu_order`, `modified` o `rand`. |
+| `order` | `DESC` | `ASC` o `DESC`. |
+| `all_label` | `Todos` | Texto del filtro que reúne todas las categorías. |
+| `load_more_label` | `Cargar más artículos` | Texto del botón de paginación. |
+
+El cambio de categoría y el botón **Cargar más artículos** usan AJAX sin recargar la página, mantienen la categoría activa y actualizan el contador de entradas mostradas. La petición solo admite categorías incluidas en la instancia del shortcode y valida un nonce propio.
+
+El color de la tarjeta se resuelve en este orden:
+
+1. metadato de categoría `_cadv_post_grid_color`;
+2. color predefinido para palma de aceite, banano, arroz, maíz y suelos;
+3. color estable derivado del slug dentro de la paleta del módulo.
 
 ## CTAs y formularios
 
@@ -490,15 +583,7 @@ Si no existe un número global configurado, el shortcode no imprime contenido.
 | `[cadv_mi_espacio]` | Acceso a `/micuenta/`: botón de inicio de sesión para visitantes e icono con popover para clientes autenticados. |
 | `[cadv_mi_cuenta]` | Área modular del cliente con resumen, datos B2B, fichas técnicas y privacidad. |
 
-Los shortcodes de producto aceptan `product_id="123"`. Si el atributo se omite, resuelven primero el objeto global de WooCommerce, la página de producto y la entrada actual.
-
-`[cadv_blog_categorias]` muestra las entradas publicadas, genera un filtro por cada categoría con contenido y carga seis tarjetas inicialmente. El botón **Cargar más artículos** usa AJAX y conserva la categoría seleccionada. Puede limitarse y personalizarse con atributos:
-
-```text
-[cadv_blog_categorias categories="palma-de-aceite,banano,arroz,maiz,suelos" per_page="6" columns="3" excerpt_words="18"]
-```
-
-`categories` acepta slugs o IDs separados por comas y respeta el orden indicado. `columns` admite de 1 a 4 columnas, `per_page` de 1 a 24 y `excerpt_words` de 5 a 60. También se admiten `orderby="date|title|menu_order|modified|rand"`, `order="ASC|DESC"`, `all_label` y `load_more_label`. Si una entrada no tiene imagen destacada, se muestra automáticamente un fondo gráfico con el color estable de su categoría.
+Los shortcodes de producto aceptan `product_id="123"`. Si el atributo se omite, resuelven primero el objeto global de WooCommerce, la página de producto y la entrada actual. La configuración completa de `[cadv_blog_categorias]` está en [Blog categorizado](#blog-categorizado).
 
 `[cadv_mi_espacio]` admite `label="Mi espacio"`, `login_label="Iniciar sesión"` y `url="/micuenta/"`. Con la sesión iniciada, el texto se presenta como popover al pasar el cursor o enfocar el icono; sin sesión, se muestra un botón de acceso. Para mostrar siempre un botón, incluso con la sesión iniciada, usa `variant="button"`. Los atributos `color`, `background_color` y `hover_color` controlan respectivamente el color de la letra, el fondo inicial y el fondo al pasar el cursor. Funcionan tanto con la variante como con el botón automático de los visitantes: `[cadv_mi_espacio color="#FFFFFF" background_color="#203212" hover_color="#D97706"]`. Para forzar el botón en ambos estados: `[cadv_mi_espacio variant="button" color="#FFFFFF" background_color="#203212" hover_color="#D97706"]`. Para crear el área del cliente, publica una página con slug `micuenta` e inserta `[cadv_mi_cuenta]`; los visitantes verán el formulario de acceso de WooCommerce y los usuarios autenticados verán un menú modular con la información capturada por el plugin.
 
@@ -625,17 +710,20 @@ cesarandev-woo-func.php
 ├── includes/
 │   ├── class-cadv-woo-functionalities.php
 │   ├── class-cadv-woo-functionalities-marketplace.php
-│   └── class-cadv-woo-functionalities-updater.php
+│   ├── class-cadv-woo-functionalities-updater.php
+│   └── class-cadv-post-grid.php
 ├── assets/
 │   ├── css/
 │   │   ├── cadv-woo-functionalities.css
-│   │   └── cadv-woo-marketplace.css
+│   │   ├── cadv-woo-marketplace.css
+│   │   └── cadv-post-grid.css
 │   ├── images/
 │   │   ├── marketplace-grain-texture.jpg
 │   │   └── marketplace-soil-foliage.webp
 │   └── js/
 │       ├── cadv-woo-functionalities.js
-│       └── cadv-woo-marketplace.js
+│       ├── cadv-woo-marketplace.js
+│       └── cadv-post-grid.js
 ├── docs/assets/
 │   ├── cadv-woo-functionalities-hero.svg
 │   ├── plugin-architecture.svg
@@ -656,11 +744,17 @@ cesarandev-woo-func.php
 | Option | `cadv_woo_functionalities_recaptcha_site_key` | Clave pública de Google reCAPTCHA v2. |
 | Option | `cadv_woo_functionalities_recaptcha_secret_key` | Clave privada usada por la validación `siteverify`. |
 | Term meta | `_cadv_marketplace_color` | Color de la línea comercial. |
+| Term meta | `_cadv_post_grid_color` | Color opcional de una categoría en la cuadrícula del blog. |
 | Product meta | `_cadv_marketplace_segment` | Segmento. |
 | Product meta | `_cadv_marketplace_product_type` | Tipo. |
 | Product meta | `_cadv_marketplace_commercial_technical_description` | Descripción comercial-técnica. |
 | Product meta | `_cadv_marketplace_ica_registration` | Registro ICA. |
 | Hidden post type | `cesarandev_wf_lead` | Leads e interacciones de CTAs. |
+| Lead meta | `_cesarandev_wf_tailored_to_requests` | Hasta 50 instantáneas de expedientes Tailored To por lead. |
+| Lead meta | `_cesarandev_wf_last_external_request_id` | Identificador del último expediente externo recibido. |
+| Lead meta | `_cesarandev_wf_last_formula_summary` | Última fórmula simulada sincronizada. |
+| Lead meta | `_cesarandev_wf_last_technical_status` | Estado técnico del último expediente. |
+| Lead meta | `_cesarandev_wf_last_request_admin_url` | Enlace al expediente conservado por la calculadora. |
 | Order meta | `_cesarandev_wf_request_type` | Identifica pedidos de ficha técnica. |
 | Order meta | `_cesarandev_wf_pdf_preview_stats` | Cantidad, primera vista y última vista de cada PDF protegido. |
 | User meta | `_cesarandev_wf_created_by_plugin` | Identifica clientes del portal restringido. |
@@ -674,12 +768,15 @@ Los pedidos de fichas se crean con `created_via = cesarandev_technical_sheet_req
 | `cesarandev_wf_request_technical_sheet` | Solicitud pública o autenticada de ficha técnica. |
 | `cesarandev_wf_submit_cta` | Envío público o autenticado de CTAs. |
 | `cadv_marketplace_products` | Filtrado y paginación del marketplace. |
+| `cadv_load_blog_posts` | Filtrado y carga progresiva de entradas del blog. |
 
 ## Seguridad y privacidad
 
 - Los formularios AJAX verifican nonces de WordPress.
 - Los formularios de ficha técnica, CTA, autenticación y solicitud de eliminación validan Google reCAPTCHA v2 contra `siteverify`, usan un honeypot y limitan por IP incluso los intentos fallidos. Sin claves configuradas utilizan el CAPTCHA matemático firmado como respaldo.
 - La búsqueda AJAX del marketplace aplica límite por IP, límites de longitud y resultados acotados.
+- El AJAX del blog valida nonce, página, límites numéricos, orden permitido y pertenencia de la categoría a la instancia del shortcode.
+- El receptor Tailored To admite solo el esquema y origen esperados, sanitiza cada campo y evita duplicados por identificador externo.
 - Los formularios administrativos requieren `manage_woocommerce` y nonces específicos.
 - IDs, correos, URLs, textos y colores se sanitizan antes de usarse.
 - Las salidas HTML utilizan las funciones de escape de WordPress.
@@ -706,6 +803,8 @@ php -l cesarandev-woo-func.php
 php -l includes/class-cadv-woo-functionalities.php
 php -l includes/class-cadv-woo-functionalities-marketplace.php
 php -l includes/class-cadv-woo-functionalities-updater.php
+php -l includes/class-cadv-post-grid.php
+node --check assets/js/cadv-post-grid.js
 git diff --check
 ```
 
@@ -718,9 +817,11 @@ Prueba manual mínima:
 5. AgroPilot dentro y fuera del rango de fechas.
 6. Marketplace en escritorio y móvil.
 7. Búsqueda, ICA, línea y **Cargar más**.
-8. Exportación filtrada del CRM.
-9. Solicitud de eliminación desde **Mi cuenta**.
-10. Detección de una actualización privada.
+8. Filtros y carga progresiva de `[cadv_blog_categorias]`.
+9. Recepción, deduplicación y exportación de una solicitud Tailored To.
+10. Exportación filtrada del CRM.
+11. Solicitud de eliminación desde **Mi cuenta**.
+12. Detección de una actualización privada.
 
 ## Solución de problemas
 
@@ -751,6 +852,14 @@ Limpia la caché de página/CDN. Los recursos usan `CADV_WOO_FUNCTIONALITIES_VER
 ### Una búsqueda no encuentra resultados esperados
 
 Verifica que el producto esté publicado y que el texto exista en título, contenido, descripción corta, segmento, tipo, descripción comercial-técnica, ICA, SKU, categorías o etiquetas.
+
+### El blog categorizado no muestra contenido
+
+Comprueba que existan entradas publicadas en las categorías indicadas. `categories` debe contener slugs o IDs válidos separados por comas; una categoría vacía no genera filtro.
+
+### Una solicitud Tailored To no aparece en el CRM
+
+Confirma que ambos plugins estén activos en la misma instalación, que el payload use `schema_version = 1` y `source = cadv-tailored-to-calculator`, y que incluya identificador externo, correo, nombre y teléfono válidos. La calculadora conserva el expediente aunque el puente CRM no esté disponible y registra el código del error para reintento o diagnóstico.
 
 ### No aparece una actualización privada
 
