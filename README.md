@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.52" src="https://img.shields.io/badge/versión-1.1.52-315c27?style=flat-square">
+  <img alt="Versión 1.1.53" src="https://img.shields.io/badge/versión-1.1.53-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -480,6 +480,7 @@ Si no existe un número global configurado, el shortcode no imprime contenido.
 | `[cesarandev_ficha_tecnica]` | Alias heredado del shortcode anterior. |
 | `[cadv_registro_ica]` | Registro ICA del producto; no imprime nada si está vacío. |
 | `[cadv_categoria_producto]` | Línea comercial principal del producto. |
+| `[cadv_blog_categorias]` | Cuadrícula de entradas con filtros por categoría y carga progresiva. |
 | `[cadv_marketplace]` | Marketplace completo. |
 | `[cadv_marketplace_search]` | Buscador externo para el marketplace. |
 | `[cesarandev_crm_cta]` | Formularios o modales de cotización, servicios y newsletter. |
@@ -488,6 +489,14 @@ Si no existe un número global configurado, el shortcode no imprime contenido.
 | `[cadv_mi_cuenta]` | Área modular del cliente con resumen, datos B2B, fichas técnicas y privacidad. |
 
 Los shortcodes de producto aceptan `product_id="123"`. Si el atributo se omite, resuelven primero el objeto global de WooCommerce, la página de producto y la entrada actual.
+
+`[cadv_blog_categorias]` muestra las entradas publicadas, genera un filtro por cada categoría con contenido y carga seis tarjetas inicialmente. El botón **Cargar más artículos** usa AJAX y conserva la categoría seleccionada. Puede limitarse y personalizarse con atributos:
+
+```text
+[cadv_blog_categorias categories="palma-de-aceite,banano,arroz,maiz,suelos" per_page="6" columns="3" excerpt_words="18"]
+```
+
+`categories` acepta slugs o IDs separados por comas y respeta el orden indicado. `columns` admite de 1 a 4 columnas, `per_page` de 1 a 24 y `excerpt_words` de 5 a 60. También se admiten `orderby="date|title|menu_order|modified|rand"`, `order="ASC|DESC"`, `all_label` y `load_more_label`. Si una entrada no tiene imagen destacada, se muestra automáticamente un fondo gráfico con el color estable de su categoría.
 
 `[cadv_mi_espacio]` admite `label="Mi espacio"`, `login_label="Iniciar sesión"` y `url="/micuenta/"`. Con la sesión iniciada, el texto se presenta como popover al pasar el cursor o enfocar el icono; sin sesión, se muestra un botón de acceso. Para mostrar siempre un botón, incluso con la sesión iniciada, usa `variant="button"`. Los atributos `color`, `background_color` y `hover_color` controlan respectivamente el color de la letra, el fondo inicial y el fondo al pasar el cursor. Funcionan tanto con la variante como con el botón automático de los visitantes: `[cadv_mi_espacio color="#FFFFFF" background_color="#203212" hover_color="#D97706"]`. Para forzar el botón en ambos estados: `[cadv_mi_espacio variant="button" color="#FFFFFF" background_color="#203212" hover_color="#D97706"]`. Para crear el área del cliente, publica una página con slug `micuenta` e inserta `[cadv_mi_cuenta]`; los visitantes verán el formulario de acceso de WooCommerce y los usuarios autenticados verán un menú modular con la información capturada por el plugin.
 
