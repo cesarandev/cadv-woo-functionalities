@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.53" src="https://img.shields.io/badge/versión-1.1.53-315c27?style=flat-square">
+  <img alt="Versión 1.1.54" src="https://img.shields.io/badge/versión-1.1.54-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">

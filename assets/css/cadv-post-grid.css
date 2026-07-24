@@ -1,12 +1,12 @@
 .cadv-blog {
-	--cadv-blog-green: #216c35;
+	--cadv-blog-green: #203212;
 	--cadv-blog-text: #121b14;
 	--cadv-blog-muted: #77808d;
 	box-sizing: border-box;
 	color: var(--cadv-blog-text);
 	font-family: "Poppins", Arial, sans-serif;
-	margin: 0 auto;
-	max-width: 1120px;
+	margin: 0;
+	max-width: none;
 	width: 100%;
 }
 
@@ -41,10 +41,11 @@
 	transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
-.cadv-blog__filter:hover,
-.cadv-blog__filter:focus-visible {
-	border-color: var(--cadv-blog-green);
-	color: var(--cadv-blog-green);
+button.cadv-blog__filter:not(.is-active):hover,
+button.cadv-blog__filter:not(.is-active):focus-visible {
+	background-color: #ffffff !important;
+	border-color: var(--cadv-blog-green) !important;
+	color: var(--cadv-blog-green) !important;
 	transform: translateY(-1px);
 }
 
@@ -56,10 +57,17 @@
 }
 
 .cadv-blog__filter.is-active {
-	background: var(--cadv-blog-green);
-	border-color: var(--cadv-blog-green);
-	color: #ffffff;
+	background: var(--cadv-blog-green) !important;
+	border-color: var(--cadv-blog-green) !important;
+	color: #ffffff !important;
 	font-weight: 700;
+}
+
+button.cadv-blog__filter.is-active:hover,
+button.cadv-blog__filter.is-active:focus-visible {
+	background: var(--cadv-blog-green) !important;
+	border-color: var(--cadv-blog-green) !important;
+	color: #ffffff !important;
 }
 
 .cadv-blog__filter:disabled {
@@ -71,6 +79,7 @@
 	gap: 26px;
 	grid-template-columns: repeat(var(--cadv-blog-columns, 3), minmax(0, 1fr));
 	transition: opacity 150ms ease;
+	width: 100%;
 }
 
 .cadv-blog__grid.is-refreshing {
@@ -87,6 +96,7 @@
 	min-width: 0;
 	overflow: hidden;
 	transition: box-shadow 180ms ease, transform 180ms ease;
+	width: 100%;
 }
 
 .cadv-blog-card:hover {
