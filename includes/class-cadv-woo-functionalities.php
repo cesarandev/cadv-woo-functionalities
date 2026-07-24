@@ -91,6 +91,7 @@ final class CADV_Woo_Functionalities {
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( $this, 'register_lead_post_type' ) );
 		add_action( 'admin_menu', array( $this, 'add_settings_page' ) );
+		add_action( 'admin_menu', array( $this, 'customize_woocommerce_admin_menu' ), 999 );
 		add_action( 'admin_init', array( $this, 'maybe_migrate_settings' ), 5 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
@@ -195,21 +196,114 @@ final class CADV_Woo_Functionalities {
 	public function add_settings_page() {
 		add_submenu_page(
 			'woocommerce',
-			__( 'CADV Woo Functionalities', 'cadv-woo-functionalities' ),
-			__( 'CADV Woo Functionalities', 'cadv-woo-functionalities' ),
-			'manage_woocommerce',
-			'cadv-woo-functionalities',
-			array( $this, 'render_settings_page' )
-		);
-
-		add_submenu_page(
-			'woocommerce',
-			__( 'CRM Fichas Tecnicas', 'cadv-woo-functionalities' ),
-			__( 'CRM Fichas Tecnicas', 'cadv-woo-functionalities' ),
+			__( 'Agrobrokers CRM - Gestión comercial', 'cadv-woo-functionalities' ),
+			__( 'Gestión comercial', 'cadv-woo-functionalities' ),
 			'manage_woocommerce',
 			'cesarandev-wf-crm',
 			array( $this, 'render_crm_page' )
 		);
+
+		add_submenu_page(
+			'woocommerce',
+			__( 'Agrobrokers CRM - Configuración', 'cadv-woo-functionalities' ),
+			__( 'Configuración', 'cadv-woo-functionalities' ),
+			'manage_woocommerce',
+			'cadv-woo-functionalities',
+			array( $this, 'render_settings_page' )
+		);
+	}
+
+	/**
+	 * Present WooCommerce as the streamlined Agrobrokers CRM workspace.
+	 *
+	 * Standard WooCommerce screens remain available by direct URL and capability;
+	 * this only removes the requested links from the admin sidebar.
+	 */
+	public function customize_woocommerce_admin_menu() {
+		global $menu, $submenu;
+
+		if ( is_array( $menu ) ) {
+			foreach ( $menu as &$menu_item ) {
+				if ( isset( $menu_item[2] ) && 'woocommerce' === $menu_item[2] ) {
+					$menu_item[0] = __( 'Agrobrokers CRM', 'cadv-woo-functionalities' );
+					$menu_item[3] = __( 'Agrobrokers CRM', 'cadv-woo-functionalities' );
+					$menu_item[6] = 'dashicons-groups';
+					break;
+				}
+			}
+			unset( $menu_item );
+		}
+
+		if ( empty( $submenu['woocommerce'] ) || ! is_array( $submenu['woocommerce'] ) ) {
+			return;
+		}
+
+		$submenu['woocommerce'] = array_values(
+			array_filter(
+				$submenu['woocommerce'],
+				function ( $submenu_item ) {
+					return ! $this->is_hidden_woocommerce_submenu( $submenu_item );
+				}
+			)
+		);
+	}
+
+	/**
+	 * Determine whether a standard WooCommerce submenu should be hidden.
+	 *
+	 * @param array $submenu_item WordPress submenu tuple.
+	 * @return bool
+	 */
+	private function is_hidden_woocommerce_submenu( $submenu_item ) {
+		$slug = isset( $submenu_item[2] ) ? rawurldecode( html_entity_decode( (string) $submenu_item[2], ENT_QUOTES, 'UTF-8' ) ) : '';
+		$name = isset( $submenu_item[0] ) ? wp_strip_all_tags( (string) $submenu_item[0] ) : '';
+		$name = preg_replace( '/\s+\d+\s*$/u', '', trim( remove_accents( $name ) ) );
+		$name = strtolower( (string) $name );
+
+		$hidden_slugs = array(
+			'woocommerce',
+			'wc-admin',
+			'edit.php?post_type=shop_order',
+			'wc-orders',
+			'edit.php?post_type=shop_coupon',
+			'wc-reports',
+			'wc-settings',
+			'wc-status',
+			'wc-addons',
+		);
+		$hidden_names = array(
+			'woocommerce',
+			'inicio',
+			'home',
+			'pedidos',
+			'orders',
+			'clientes',
+			'customers',
+			'cupones',
+			'coupons',
+			'informes',
+			'reports',
+			'ajustes',
+			'settings',
+			'estado',
+			'status',
+			'extensiones',
+			'extensions',
+		);
+
+		if ( in_array( $slug, $hidden_slugs, true ) || in_array( $name, $hidden_names, true ) ) {
+			return true;
+		}
+
+		if ( false !== strpos( $slug, 'wc-admin&path=' ) ) {
+			foreach ( array( '/orders', '/customers', '/marketing/coupons' ) as $hidden_path ) {
+				if ( false !== strpos( $slug, $hidden_path ) ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -479,7 +573,7 @@ final class CADV_Woo_Functionalities {
 		}
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'CADV Woo Functionalities', 'cadv-woo-functionalities' ); ?></h1>
+			<h1><?php esc_html_e( 'Configuración de Agrobrokers', 'cadv-woo-functionalities' ); ?></h1>
 			<form method="post" action="options.php">
 				<?php
 				settings_fields( 'cadv_woo_functionalities_settings' );
@@ -520,7 +614,7 @@ final class CADV_Woo_Functionalities {
 		$this->render_crm_styles();
 		?>
 		<div class="wrap cesarandev-wf-crm">
-			<h1><?php esc_html_e( 'CRM Fichas Tecnicas', 'cadv-woo-functionalities' ); ?></h1>
+			<h1><?php esc_html_e( 'Gestión comercial Agrobrokers', 'cadv-woo-functionalities' ); ?></h1>
 			<?php $this->render_crm_notices(); ?>
 			<nav class="nav-tab-wrapper">
 				<?php foreach ( $tabs as $tab_key => $label ) : ?>

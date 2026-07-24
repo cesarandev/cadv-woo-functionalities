@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.54" src="https://img.shields.io/badge/versión-1.1.54-315c27?style=flat-square">
+  <img alt="Versión 1.1.55" src="https://img.shields.io/badge/versión-1.1.55-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -71,7 +71,7 @@ El plugin utiliza productos, categorías, usuarios, pedidos y permisos de descar
 2. En WordPress ve a **Plugins → Añadir plugin → Subir plugin**.
 3. Instala el ZIP y activa **CADV Woo Functionalities**.
 4. Confirma que WooCommerce esté activo.
-5. Abre **WooCommerce → CADV Woo Functionalities** para completar la configuración global.
+5. Abre **Agrobrokers CRM → Configuración** para completar la configuración global.
 
 También puedes copiar la carpeta directamente a:
 
@@ -81,9 +81,11 @@ wp-content/plugins/cesarandev-woo-func/
 
 ## Configuración inicial
 
+En el escritorio de WordPress, las herramientas comerciales se agrupan bajo **Agrobrokers CRM**, identificado con un icono de equipo. El menú lateral muestra únicamente **Gestión comercial** y **Configuración** como accesos propios del plugin. Los accesos estándar de WooCommerce a Inicio, Pedidos, Clientes, Cupones, Informes, Ajustes, Estado y Extensiones se ocultan del menú, pero sus pantallas y funciones no se desactivan y siguen disponibles por URL directa para usuarios autorizados.
+
 ### 1. Configurar WhatsApp
 
-Ve a **WooCommerce → CADV Woo Functionalities** y completa:
+Ve a **Agrobrokers CRM → Configuración** y completa:
 
 - **Número de WhatsApp:** código de país y número, únicamente dígitos. Ejemplo: `573001234567`.
 - **Mensaje automático:** plantilla usada en el producto individual y en cualquier shortcode sin mensaje personalizado.
@@ -203,7 +205,7 @@ Los clientes nuevos reciben la notificación estándar de creación de cuenta de
 
 ## CRM comercial
 
-Disponible en **WooCommerce → CRM Fichas Técnicas** para usuarios con la capacidad `manage_woocommerce`.
+Disponible en **Agrobrokers CRM → Gestión comercial** para usuarios con la capacidad `manage_woocommerce`.
 
 ### Dashboard
 
@@ -593,7 +595,7 @@ El acceso de `[cadv_mi_cuenta]` ocupa el ancho completo y mantiene dentro de `/m
 [cadv_mi_cuenta login_image_id="123" login_image_alt="Cultivo de maíz" login_image_title="Soluciones para tu cultivo" login_image_text="Consulta tus documentos y datos comerciales."]
 ```
 
-También se admite `login_image="https://dominio.com/imagen.jpg"` o una ruta local como `login_image="/wp-content/uploads/imagen.jpg"`. La imagen predeterminada puede elegirse desde **WooCommerce → CADV Woo Functionalities → Portal de clientes**; los atributos del shortcode tienen prioridad sobre ese ajuste global. En tablet el formulario y la imagen conservan las dos columnas; en móvil se apilan para mantener campos, botones y textos legibles.
+También se admite `login_image="https://dominio.com/imagen.jpg"` o una ruta local como `login_image="/wp-content/uploads/imagen.jpg"`. La imagen predeterminada puede elegirse desde **Agrobrokers CRM → Configuración → Portal de clientes**; los atributos del shortcode tienen prioridad sobre ese ajuste global. En tablet el formulario y la imagen conservan las dos columnas; en móvil se apilan para mantener campos, botones y textos legibles.
 
 Los formularios de acceso, recuperación, restablecimiento y solicitud de eliminación incluyen Google reCAPTCHA v2 cuando sus claves están configuradas, además de honeypot y límites por IP. Las contraseñas nuevas deben tener al menos 12 caracteres.
 
@@ -601,7 +603,7 @@ En **Fichas tecnicas**, cada PDF local ofrece **Vista previa** y **Descargar**. 
 
 El visor protegido requiere que PHP tenga habilitada la extensión **Imagick** con soporte para PDF mediante **Ghostscript**. Si el motor no está disponible o el archivo no es un PDF local válido, el plugin no muestra la acción de vista previa y conserva únicamente la descarga autorizada de WooCommerce.
 
-Configura las claves de tipo **reCAPTCHA v2 → No soy un robot** en **WooCommerce → CADV Woo Functionalities → Google reCAPTCHA v2**. El checkbox puede abrir el reto de selección de imágenes cuando Google lo considere necesario. Si falta alguna clave, el plugin conserva temporalmente la verificación matemática firmada para no dejar los formularios desprotegidos. También puedes definir las constantes `CADV_RECAPTCHA_SITE_KEY` y `CADV_RECAPTCHA_SECRET_KEY` en `wp-config.php`; estas tienen prioridad sobre los campos administrativos.
+Configura las claves de tipo **reCAPTCHA v2 → No soy un robot** en **Agrobrokers CRM → Configuración → Google reCAPTCHA v2**. El checkbox puede abrir el reto de selección de imágenes cuando Google lo considere necesario. Si falta alguna clave, el plugin conserva temporalmente la verificación matemática firmada para no dejar los formularios desprotegidos. También puedes definir las constantes `CADV_RECAPTCHA_SITE_KEY` y `CADV_RECAPTCHA_SECRET_KEY` en `wp-config.php`; estas tienen prioridad sobre los campos administrativos.
 
 Nuevas secciones pueden registrarse sin modificar el shortcode mediante el filtro `cadv_woo_functionalities_account_modules`. Cada módulo se identifica por su slug y define `label`, `icon` y un `callback` invocable; opcionalmente puede incluir `capability` para limitar su acceso. El callback recibe el ID del usuario, el slug y la configuración completa del módulo. También están disponibles las acciones `cadv_woo_functionalities_before_account_module` y `cadv_woo_functionalities_after_account_module` para integrar contenido alrededor del módulo activo.
 
@@ -831,7 +833,7 @@ El producto no tiene archivos descargables. Edita el producto, marca la opción 
 
 ### El botón de WhatsApp no aparece
 
-Configura el número global en **WooCommerce → CADV Woo Functionalities**. El valor debe contener código de país y únicamente números.
+Configura el número global en **Agrobrokers CRM → Configuración**. El valor debe contener código de país y únicamente números.
 
 ### El shortcode de producto no muestra contenido
 
