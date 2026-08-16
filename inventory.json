@@ -1,0 +1,17 @@
+{
+  "scan_root": "C:\\Users\\cuces\\Local Sites\\agrobrokers\\app\\public\\wp-content\\plugins\\cesarandev-woo-func",
+  "dependencies": [],
+  "containers": [],
+  "cloud_configs": [],
+  "secrets_exposure": {
+    "env_files_found": [],
+    "potentially_exposed": [],
+    "risk": "LOW"
+  },
+  "summary": {
+    "total_dependencies": 0,
+    "container_configs": 0,
+    "cloud_configs": 0,
+    "secrets_risk": "LOW"
+  }
+}

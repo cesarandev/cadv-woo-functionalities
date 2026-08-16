@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="Versión 1.1.55" src="https://img.shields.io/badge/versión-1.1.55-315c27?style=flat-square">
+  <img alt="Versión 1.1.56" src="https://img.shields.io/badge/versión-1.1.56-315c27?style=flat-square">
   <img alt="WordPress 6.0 o superior" src="https://img.shields.io/badge/WordPress-6.0%2B-21759b?style=flat-square&logo=wordpress&logoColor=white">
   <img alt="PHP 7.4 o superior" src="https://img.shields.io/badge/PHP-7.4%2B-777bb4?style=flat-square&logo=php&logoColor=white">
   <img alt="WooCommerce requerido" src="https://img.shields.io/badge/WooCommerce-requerido-96588a?style=flat-square&logo=woocommerce&logoColor=white">
@@ -194,14 +194,15 @@ Si el cliente inició sesión, se precargan sus datos y el correo queda bloquead
 </p>
 
 1. Se valida el nonce, el formulario y la existencia del producto.
-2. Se usa el cliente autenticado, se busca un usuario por correo o se crea un cliente WooCommerce.
+2. Se usa el cliente autenticado o se crea un cliente WooCommerce con el correo suministrado.
 3. Se actualizan los datos B2B del cliente.
 4. Si ya posee permisos activos para todos los archivos, no se duplica la solicitud.
 5. Si necesita acceso, se crea un pedido de valor cero, se marca como completado y WooCommerce genera los permisos de descarga.
 6. La solicitud queda disponible en el CRM.
-7. Los clientes autenticados reciben un correo cuando se concede una ficha nueva.
+7. Los clientes nuevos reciben por correo su usuario y contraseña temporal, inician sesión automáticamente y ven una confirmación antes de ir a sus descargas.
+8. Los clientes que ya estaban autenticados reciben un correo cuando se concede una ficha nueva.
 
-Los clientes nuevos reciben la notificación estándar de creación de cuenta de WooCommerce y pueden entrar a **Mi cuenta → Descargas**.
+El correo de una cuenta nueva lo envía directamente este flujo para no depender de que la plantilla estándar de nueva cuenta de WooCommerce esté cargada durante la solicitud AJAX.
 
 ## CRM comercial
 

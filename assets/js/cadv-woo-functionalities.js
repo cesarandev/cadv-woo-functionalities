@@ -90,6 +90,11 @@
 		var modal = document.querySelector('[data-cesarandev-wf-modal]');
 		var form = document.querySelector('[data-cesarandev-wf-form]');
 		var message = document.querySelector('[data-cesarandev-wf-message]');
+		var dialog = modal ? modal.querySelector('[role="dialog"]') : null;
+		var requestView = modal ? modal.querySelector('[data-cesarandev-wf-request-view]') : null;
+		var successView = modal ? modal.querySelector('[data-cesarandev-wf-account-success]') : null;
+		var successMessage = modal ? modal.querySelector('[data-cesarandev-wf-account-success-message]') : null;
+		var successLink = modal ? modal.querySelector('[data-cesarandev-wf-account-success-link]') : null;
 		var openButtons = document.querySelectorAll('[data-cesarandev-wf-open-modal]');
 		var closeButtons = document.querySelectorAll('[data-cesarandev-wf-close-modal]');
 		var lastFocusedElement = null;
@@ -100,6 +105,15 @@
 
 		function openModal() {
 			lastFocusedElement = document.activeElement;
+			if (dialog) {
+				dialog.setAttribute('aria-labelledby', 'cesarandev-wf-modal-title');
+			}
+			if (requestView) {
+				requestView.hidden = false;
+			}
+			if (successView) {
+				successView.hidden = true;
+			}
 			modal.hidden = false;
 			document.body.classList.add('cesarandev-wf-modal-open');
 			clearMessage(message);
@@ -170,6 +184,22 @@
 
 					if (!config.isLoggedIn) {
 						form.reset();
+					}
+
+					if (data.accountCreated && requestView && successView) {
+						requestView.hidden = true;
+						successView.hidden = false;
+						if (dialog) {
+							dialog.setAttribute('aria-labelledby', 'cesarandev-wf-account-success-title');
+						}
+						if (successMessage) {
+							successMessage.textContent = data.message;
+						}
+						if (successLink && data.downloadsUrl) {
+							successLink.href = data.downloadsUrl;
+							successLink.focus();
+						}
+						return;
 					}
 
 					if (data.downloadsUrl) {

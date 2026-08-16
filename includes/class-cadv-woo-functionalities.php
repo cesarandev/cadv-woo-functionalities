@@ -3141,12 +3141,13 @@ final class CADV_Woo_Functionalities {
 			<div class="cesarandev-wf-modal__overlay" data-cesarandev-wf-close-modal></div>
 			<div class="cesarandev-wf-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="cesarandev-wf-modal-title">
 				<button type="button" class="cesarandev-wf-modal__close" data-cesarandev-wf-close-modal aria-label="<?php esc_attr_e( 'Cerrar', 'cadv-woo-functionalities' ); ?>">&times;</button>
-				<div class="cesarandev-wf-modal__header">
-					<p class="cesarandev-wf-modal__eyebrow"><?php esc_html_e( 'Descargue la ficha tecnica de:', 'cadv-woo-functionalities' ); ?></p>
-					<h2 id="cesarandev-wf-modal-title"><?php echo esc_html( $product_name ); ?></h2>
-					<p><?php esc_html_e( 'Para enviarle el documento necesitamos sus datos de contacto.', 'cadv-woo-functionalities' ); ?></p>
-				</div>
-				<form class="cesarandev-wf-form" data-cesarandev-wf-form novalidate>
+				<div data-cesarandev-wf-request-view>
+					<div class="cesarandev-wf-modal__header">
+						<p class="cesarandev-wf-modal__eyebrow"><?php esc_html_e( 'Descargue la ficha tecnica de:', 'cadv-woo-functionalities' ); ?></p>
+						<h2 id="cesarandev-wf-modal-title"><?php echo esc_html( $product_name ); ?></h2>
+						<p><?php esc_html_e( 'Para enviarle el documento necesitamos sus datos de contacto.', 'cadv-woo-functionalities' ); ?></p>
+					</div>
+					<form class="cesarandev-wf-form" data-cesarandev-wf-form novalidate>
 					<input type="hidden" name="product_id" value="<?php echo esc_attr( $product_id ); ?>" />
 
 					<label>
@@ -3198,7 +3199,15 @@ final class CADV_Woo_Functionalities {
 							<span><?php esc_html_e( 'Escribir por WhatsApp', 'cadv-woo-functionalities' ); ?></span>
 						</a>
 					<?php endif; ?>
-				</form>
+					</form>
+				</div>
+				<div class="cesarandev-wf-account-success" data-cesarandev-wf-account-success hidden>
+					<span class="cesarandev-wf-account-success__icon" aria-hidden="true">&#10003;</span>
+					<p class="cesarandev-wf-modal__eyebrow"><?php esc_html_e( 'Cuenta creada', 'cadv-woo-functionalities' ); ?></p>
+					<h2 id="cesarandev-wf-account-success-title"><?php esc_html_e( 'Tu ficha tecnica esta lista', 'cadv-woo-functionalities' ); ?></h2>
+					<p data-cesarandev-wf-account-success-message></p>
+					<a class="cesarandev-wf-account-success__button" data-cesarandev-wf-account-success-link href="<?php echo esc_url( $this->get_my_account_module_url( 'descargas' ) ); ?>"><?php esc_html_e( 'Ver mis fichas tecnicas', 'cadv-woo-functionalities' ); ?><span aria-hidden="true">&rarr;</span></a>
+				</div>
 			</div>
 		</div>
 		<?php
@@ -3563,6 +3572,8 @@ final class CADV_Woo_Functionalities {
 	 * Handle technical sheet request.
 	 */
 	public function handle_technical_sheet_request() {
+		$was_logged_in = is_user_logged_in();
+
 		if ( ! $this->is_woocommerce_active() ) {
 			wp_send_json_error( array( 'message' => __( 'WooCommerce no esta activo.', 'cadv-woo-functionalities' ) ), 400 );
 		}
@@ -3594,11 +3605,13 @@ final class CADV_Woo_Functionalities {
 			wp_send_json_error( array( 'message' => __( 'Este producto no tiene una ficha tecnica descargable configurada.', 'cadv-woo-functionalities' ) ), 400 );
 		}
 
-		$user_id = $this->get_or_create_customer( $data );
+		$customer = $this->get_or_create_customer( $data );
 
-		if ( is_wp_error( $user_id ) ) {
-			wp_send_json_error( array( 'message' => $user_id->get_error_message() ), 400 );
+		if ( is_wp_error( $customer ) ) {
+			wp_send_json_error( array( 'message' => $customer->get_error_message() ), 400 );
 		}
+
+		$user_id = $customer['user_id'];
 
 		$this->update_customer_b2b_data( $user_id, $data );
 		$this->mark_lead_converted_by_email( $data['email'], $user_id );
@@ -3613,20 +3626,34 @@ final class CADV_Woo_Functionalities {
 			);
 		}
 
-		$order_id = $this->create_technical_sheet_order( $user_id, $product, $data );
+		$order_id = $this->create_technical_sheet_order( $user_id, $product, $data, $was_logged_in );
 
 		if ( is_wp_error( $order_id ) ) {
 			wp_send_json_error( array( 'message' => $order_id->get_error_message() ), 500 );
 		}
 
-		if ( is_user_logged_in() ) {
+		if ( $was_logged_in ) {
 			$this->send_logged_in_sheet_notification( $user_id, $product );
+		}
+
+		$message = __( 'Tu solicitud fue registrada. Ya puedes acceder a la ficha tecnica desde tu zona de cliente.', 'cadv-woo-functionalities' );
+
+		if ( $customer['created'] && $customer['credentials_sent'] ) {
+			$message = sprintf(
+				/* translators: %s: customer email address. */
+				__( 'Tu cuenta fue creada e iniciamos sesion automaticamente. Enviamos tu usuario y contrasena temporal a %s.', 'cadv-woo-functionalities' ),
+				$data['email']
+			);
+		} elseif ( $customer['created'] ) {
+			$message = __( 'Tu cuenta fue creada e iniciamos sesion automaticamente, pero el servidor no pudo enviar las credenciales. Puedes usar la opcion Recuperar contrasena desde Mi cuenta.', 'cadv-woo-functionalities' );
 		}
 
 		wp_send_json_success(
 			array(
-				'message'      => __( 'Tu solicitud fue registrada. Ya puedes acceder a la ficha tecnica desde tu zona de cliente.', 'cadv-woo-functionalities' ),
-				'downloadsUrl' => $this->get_my_account_module_url( 'descargas' ),
+				'message'         => $message,
+				'downloadsUrl'    => $this->get_my_account_module_url( 'descargas' ),
+				'accountCreated'  => $customer['created'],
+				'credentialsSent' => $customer['credentials_sent'],
 			)
 		);
 	}
@@ -4091,11 +4118,15 @@ final class CADV_Woo_Functionalities {
 	 * Get an existing customer by email or create a new one.
 	 *
 	 * @param array $data Request data.
-	 * @return int|WP_Error
+	 * @return array|WP_Error Customer result with user ID and account notification state.
 	 */
 	private function get_or_create_customer( array $data ) {
 		if ( is_user_logged_in() ) {
-			return get_current_user_id();
+			return array(
+				'user_id'          => get_current_user_id(),
+				'created'          => false,
+				'credentials_sent' => false,
+			);
 		}
 
 		$existing_user = get_user_by( 'email', $data['email'] );
@@ -4128,18 +4159,66 @@ final class CADV_Woo_Functionalities {
 		update_user_meta( $user_id, '_cesarandev_wf_created_by_plugin', '1' );
 		update_user_option( $user_id, 'default_password_nag', true, true );
 
-		do_action(
-			'woocommerce_created_customer_notification',
-			$user_id,
-			array(
-				'user_login' => get_userdata( $user_id )->user_login,
-				'user_email' => $data['email'],
-				'user_pass'  => $password,
-			),
-			true
+		$credentials_sent = $this->send_new_customer_credentials( $user_id, $password );
+
+		wc_set_customer_auth_cookie( $user_id );
+
+		return array(
+			'user_id'          => (int) $user_id,
+			'created'          => true,
+			'credentials_sent' => $credentials_sent,
+		);
+	}
+
+	/**
+	 * Send the username and temporary password created for a sheet requester.
+	 *
+	 * The WooCommerce new-account template now sends a password setup link and
+	 * may not be initialized during a custom AJAX registration. This flow needs
+	 * the actual temporary credentials, so it owns the notification explicitly.
+	 *
+	 * @param int    $user_id  Customer user ID.
+	 * @param string $password Generated temporary password.
+	 * @return bool Whether WordPress accepted the message for delivery.
+	 */
+	private function send_new_customer_credentials( $user_id, $password ) {
+		$user = get_userdata( $user_id );
+
+		if ( ! $user instanceof WP_User || empty( $user->user_email ) ) {
+			return false;
+		}
+
+		$site_name = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$subject   = sprintf(
+			/* translators: %s: website name. */
+			__( 'Tus credenciales de acceso a %s', 'cadv-woo-functionalities' ),
+			$site_name
+		);
+		$message   = sprintf(
+			/* translators: 1: customer name, 2: website name, 3: username, 4: temporary password, 5: account URL. */
+			__( "Hola %1\$s,\n\nCreamos tu cuenta en %2\$s para que puedas consultar tus fichas tecnicas.\n\nUsuario: %3\$s\nContrasena temporal: %4\$s\n\nIngresa a tu cuenta: %5\$s\n\nPor seguridad, conserva estas credenciales en un lugar seguro.", 'cadv-woo-functionalities' ),
+			$user->display_name,
+			$site_name,
+			$user->user_login,
+			$password,
+			$this->get_my_account_url()
 		);
 
-		return (int) $user_id;
+		$sent = wp_mail( $user->user_email, $subject, $message );
+
+		if ( $sent ) {
+			update_user_meta( $user_id, '_cesarandev_wf_credentials_sent_at', current_time( 'mysql' ) );
+		} elseif ( function_exists( 'wc_get_logger' ) ) {
+			wc_get_logger()->error(
+				'WordPress no pudo entregar el correo de credenciales de una cuenta creada por solicitud de ficha.',
+				array(
+					'source'  => 'cadv-technical-sheet-credentials',
+					'user_id' => (int) $user_id,
+				)
+			);
+		}
+
+		return $sent;
 	}
 
 	/**
@@ -4280,10 +4359,11 @@ final class CADV_Woo_Functionalities {
 	 *
 	 * @param int        $user_id Customer user ID.
 	 * @param WC_Product $product WooCommerce product.
-	 * @param array      $data    Request data.
+	 * @param array      $data          Request data.
+	 * @param bool       $was_logged_in Whether the request started authenticated.
 	 * @return int|WP_Error
 	 */
-	private function create_technical_sheet_order( $user_id, WC_Product $product, array $data ) {
+	private function create_technical_sheet_order( $user_id, WC_Product $product, array $data, $was_logged_in ) {
 		$order = wc_create_order(
 			array(
 				'customer_id' => $user_id,
@@ -4327,7 +4407,7 @@ final class CADV_Woo_Functionalities {
 		$order->update_meta_data( '_cesarandev_wf_company', $data['company'] );
 		$order->update_meta_data( '_cesarandev_wf_position', $data['position'] );
 		$order->update_meta_data( '_cesarandev_wf_requested_product_id', $product->get_id() );
-		$order->update_meta_data( '_cesarandev_wf_origin', is_user_logged_in() ? 'logged_in_customer' : 'guest_form' );
+		$order->update_meta_data( '_cesarandev_wf_origin', $was_logged_in ? 'logged_in_customer' : 'guest_form' );
 		$order->update_meta_data( '_cesarandev_wf_crm_status', 'new' );
 		$order->update_meta_data( '_cesarandev_wf_crm_note', '' );
 		$order->update_meta_data( '_cesarandev_wf_follow_up_at', '' );
